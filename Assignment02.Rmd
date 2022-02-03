@@ -38,6 +38,9 @@ ggplot(census) +
   theme_void()
 
 #download employment data
+#NOTE: I think we also will need the LEHD residence area characteristics,
+#to determine which RESIDENTS will no longer have to commute, in addition to 
+#which jobs in the MSA will no longer have commuters.
 
 lehd_blocks <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/wac/ca_wac_S000_JT00_2019.csv.gz", show_col_types = F) %>%
   rename(total_emp = C000) %>%
