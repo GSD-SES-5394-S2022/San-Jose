@@ -11,13 +11,30 @@ library(tidycensus)
 library(ggplot2)
 library(sf)
 library(units)
-
+library(tigris)
 
 
 ```
 
-```{r}
+# Load Variables
 
+```{r}
+sanjose_msa <- core_based_statistical_areas() %>%
+  filter(GEOID == "41940")
+
+view(load_variables(2019, "acs5"))
+
+vars <- c(med_income = "B06011_001") #discuss which variables are needed for analysis
+
+census <- get_acs(geography = "tract",
+                  state = "CA",
+                  variables = vars,
+                  output = "wide",
+                  geometry = T) %>%
+  st_filter(sanjose_msa)
+
+ggplot(census) +
+  geom_sf(aes(fill = med_incomeE), color = alpha("white", .1))
 
 
 ```
