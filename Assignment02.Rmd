@@ -34,7 +34,8 @@ census <- get_acs(geography = "tract",
   st_filter(sanjose_msa)
 
 ggplot(census) +
-  geom_sf(aes(fill = med_incomeE), color = alpha("white", .1))
+  geom_sf(aes(fill = med_incomeE), color = alpha("white", .1)) +
+  theme_void()
 
 
 ```
