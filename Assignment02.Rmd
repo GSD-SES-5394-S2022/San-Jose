@@ -138,12 +138,18 @@ baseline, i.e. from 5 days per week to 3 days per week.
 - generate 40% wfh-able jobs and employees
 - generate: total workers - WFH - 40% * (WFH-able jobs + WFH-able employees)
 40% is an assumption
+- assume people WFH is not counted in the total jobs
+- assume that there is negligible overlap between people working in a tract and living 
+in that tract. (based on random sampling of LEHD data)
 
 ```{r}
 census_alt <- census %>%
   mutate(wfh_percent = .4,
-         
-    alt_total = )
+         alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
+         alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
+         alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
+         alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - 
+                                 wfh_percent * WFH_emp), digits = 0)
   
 
 
@@ -154,9 +160,12 @@ census_alt <- census %>%
 # Save Datasets
 
 ```{r}
-existing <- write_csv(census, "existing/existing_sanjose.csv")
-existing_spatial <- st_write(census, "existing/existing_sanjose.geojson")
-zones_sanjose <- st_write(tracts, "zones/zones_sanjose.geojson", append = F)
+existing <- write_csv(census, "existing/existing_sanjose.csv", append = F)
+
+zones_sanjose <- st_write(tracts, "zones/zones_sanjose2.geojson", append = F)
+
+alternative <- write_csv(census_alt, "alternative/alternative_sanjose.csv", append = F)
+
 
 
 
