@@ -99,43 +99,30 @@ od <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/od/ca_od_aux_JT
             goodsproducing = sum(SI01),
             trade_transpo_utility = sum(SI02),
             otherservices = sum(SI03)) %>%
-  left_join(census, by = c("w_GEOID" = "GEOID")) %>%
+  full_join(census, by = c("w_GEOID" = "GEOID")) %>%
   select(w_GEOID, h_GEOID, total, goodsproducing, 
          trade_transpo_utility, otherservices, NAME) %>%
   mutate(work_tract = ifelse(is.na(NAME) == F, 1, 0)) %>%
   select(-NAME) %>%
-  filter(is.na(w_GEOID) == F,
-         is.na(h_GEOID) == F)
-
-
-od_temp <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/od/ca_od_aux_JT00_2019.csv.gz",
-               show_col_types = F) %>%
-  mutate(w_geocode = as.character(w_geocode),
-         h_geocode = as.character(h_geocode)) %>%
-  mutate(w_GEOID = substr(w_geocode, 1, 11),
-         h_GEOID = substr(h_geocode, 1, 11)) 
-  select(-h_geocode, -w_geocode) %>%
-  group_by(h_GEOID, w_GEOID) %>%
-  summarise(total = sum(S000),
-            goodsproducing = sum(SI01),
-            trade_transpo_utility = sum(SI02),
-            otherservices = sum(SI03)) %>%
-  left_join(census, by = c("h_GEOID" = "GEOID")) %>%
+  full_join(census, by = c("h_GEOID" = "GEOID")) %>%
   select(w_GEOID, h_GEOID, total, goodsproducing, 
-         trade_transpo_utility, otherservices, NAME) %>%
+         trade_transpo_utility, otherservices, NAME, work_tract) %>%
   mutate(home_tract = ifelse(is.na(NAME) == F, 1, 0)) %>%
   select(-NAME) %>%
   filter(is.na(w_GEOID) == F,
          is.na(h_GEOID) == F)
 
-od %>%
-  group_by(work_tract) %>%
-  summarise(sum = sum(total))
-
+#the OD LEHD data does not seem to have any tracts in the "home" designation
+#that overlaps with tracts in the San Jose MSA, which seems odd. I went
+#back to the raw data and that is the case, though, so I'm not sure what 
+#to think.
 
 od %>%
   group_by(work_tract, home_tract) %>%
-  summarise(sum = sum(total))
+  summarise(total = sum(total),
+            goodsproducing = sum(goodsproducing),
+            trade_transpo_utility = sum(trade_transpo_utility),
+            other_services = sum(otherservices))
 
 ```
 
