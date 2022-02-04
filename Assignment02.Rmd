@@ -31,7 +31,10 @@ vars <- c(med_income = "B06011_001",
           two_veh_hh = 'B08201_004',
           three_veh_hh = 'B08201_005',
           fourmore_veh_hh = 'B08201_006',
-          
+          no_worker_hh = 'B08202_002',
+          one_worker_hh = 'B08202_003',
+          two_worker_hh = 'B08202_004',
+          threemore_worker_hh = 'B08202_005',
           hh_1person = 'B08201_007',
           hh_2person = 'B08201_013',
           hh_3person = 'B08201_019',
@@ -111,47 +114,6 @@ census <- census %>%
   left_join(lehd_tracts_jobs, by = "GEOID") %>%
   left_join(lehd_tracts_emp, by = "GEOID")
 
-# random line to commit
-
-#read in the Origin/Destination LEHD data
-# od <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/od/ca_od_aux_JT00_2019.csv.gz",
-#                show_col_types = F) %>%
-#   mutate(w_geocode = as.character(w_geocode),
-#          h_geocode = as.character(h_geocode)) %>%
-#   mutate(w_GEOID = substr(w_geocode, 1, 11),
-#          h_GEOID = substr(h_geocode, 1, 11)) %>%
-#   select(-h_geocode, -w_geocode) %>%
-#   group_by(w_GEOID, h_GEOID) %>%
-#   summarise(total = sum(S000),
-#             goodsproducing = sum(SI01),
-#             trade_transpo_utility = sum(SI02),
-#             otherservices = sum(SI03)) %>%
-#   full_join(census, by = c("w_GEOID" = "GEOID")) %>%
-#   select(w_GEOID, h_GEOID, total, goodsproducing, 
-#          trade_transpo_utility, otherservices, NAME) %>%
-#   mutate(work_tract = ifelse(is.na(NAME) == F, 1, 0)) %>%
-#   select(-NAME) %>%
-#   full_join(census, by = c("h_GEOID" = "GEOID")) %>%
-#   select(w_GEOID, h_GEOID, total, goodsproducing, 
-#          trade_transpo_utility, otherservices, NAME, work_tract) %>%
-#   mutate(home_tract = ifelse(is.na(NAME) == F, 1, 0)) %>%
-#   select(-NAME) %>%
-#   filter(is.na(w_GEOID) == F,
-#          is.na(h_GEOID) == F)
-
-#the OD LEHD data does not seem to have any tracts in the "home" designation
-#that overlaps with tracts in the San Jose MSA, which seems odd. I went
-#back to the raw data and that is the case, though, so I'm not sure what 
-#to think.
-
-# od %>%
-#   group_by(work_tract, home_tract) %>%
-#   summarise(total = sum(total),
-#             goodsproducing = sum(goodsproducing),
-#             trade_transpo_utility = sum(trade_transpo_utility),
-#             other_services = sum(otherservices))
-# 
-# just checking
 
 ```
 
