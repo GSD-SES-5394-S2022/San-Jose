@@ -151,6 +151,8 @@ od %>%
             trade_transpo_utility = sum(trade_transpo_utility),
             other_services = sum(otherservices))
 
+# just checking
+
 ```
 
 
