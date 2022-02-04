@@ -118,6 +118,15 @@ census <- census %>%
 
 ```
 
+# Save Datasets
+
+```{r}
+existing <- write_csv(census, "existing/existing_sanjose.csv")
+existing_spatial <- st_write(census, "existing/existing_sanjose.geojson")
+
+
+```
+
 
 
 
