@@ -24,7 +24,8 @@ sanjose_msa <- core_based_statistical_areas() %>%
 
 view(load_variables(2019, "acs5"))
 
-vars <- c(med_income = "B06011_001") #discuss which variables are needed for analysis
+vars <- c(med_income = "B06011_001",
+          med="B06011_002") #discuss which variables are needed for analysis
 
 census <- get_acs(geography = "tract",
                   state = "CA",
