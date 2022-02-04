@@ -113,7 +113,7 @@ od_temp <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/od/ca_od_a
   mutate(w_geocode = as.character(w_geocode),
          h_geocode = as.character(h_geocode)) %>%
   mutate(w_GEOID = substr(w_geocode, 1, 11),
-         h_GEOID = substr(h_geocode, 1, 11)) %>%
+         h_GEOID = substr(h_geocode, 1, 11)) 
   select(-h_geocode, -w_geocode) %>%
   group_by(h_GEOID, w_GEOID) %>%
   summarise(total = sum(S000),
