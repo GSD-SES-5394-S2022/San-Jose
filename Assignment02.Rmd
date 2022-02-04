@@ -54,7 +54,7 @@ vars <- c(med_income = "B06011_001",
           inc_btw_100k_125k = 'B19001_014',
           inc_btw_125k_150k = 'B19001_015',
           inc_btw_150k_200k = 'B19001_016',
-          inc_gt_200k = 'B19001_017') #discuss which variables are needed for analysis
+          inc_gt_200k = 'B19001_017') 
 
 census <- get_acs(geography = "tract",
                   state = "CA",
@@ -112,7 +112,8 @@ lehd_tracts_emp <- lehd_blocks_emp %>%
 
 census <- census %>%
   left_join(lehd_tracts_jobs, by = "GEOID") %>%
-  left_join(lehd_tracts_emp, by = "GEOID")
+  left_join(lehd_tracts_emp, by = "GEOID") %>%
+  select(-contains("M", ignore.case = F))
 
 
 ```
