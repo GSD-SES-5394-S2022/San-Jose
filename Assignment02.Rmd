@@ -25,7 +25,33 @@ sanjose_msa <- core_based_statistical_areas() %>%
 view(load_variables(2019, "acs5"))
 
 vars <- c(med_income = "B06011_001",
-          med="B06011_002") #discuss which variables are needed for analysis
+          total_hhs = 'B08203_001',
+          no_veh_hh = 'B08203_002',
+          one_veh_hh = 'B08201_003',
+          two_veh_hh = 'B08201_004',
+          three_veh_hh = 'B08201_005',
+          fourmore_veh_hh = 'B08201_006',
+          
+          hh_1person = 'B08201_007',
+          hh_2person = 'B08201_013',
+          hh_3person = 'B08201_019',
+          hh_4person_plus = 'B08201_025',
+          inc_lt_10k = 'B19001_002',
+          inc_btw_10k_15k = 'B19001_003',
+          inc_btw_15k_20k = 'B19001_004',
+          inc_btw_20k_25k = 'B19001_005',
+          inc_btw_25k_30k = 'B19001_006',
+          inc_btw_30k_35k = 'B19001_007',
+          inc_btw_35k_40k = 'B19001_008',
+          inc_btw_40k_45k = 'B19001_009',
+          inc_btw_45k_50k = 'B19001_010',
+          inc_btw_50k_60k = 'B19001_011',
+          inc_btw_60k_75k = 'B19001_012',
+          inc_btw_75k_100k = 'B19001_013',
+          inc_btw_100k_125k = 'B19001_014',
+          inc_btw_125k_150k = 'B19001_015',
+          inc_btw_150k_200k = 'B19001_016',
+          inc_gt_200k = 'B19001_017') #discuss which variables are needed for analysis
 
 census <- get_acs(geography = "tract",
                   state = "CA",
