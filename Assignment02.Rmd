@@ -35,6 +35,8 @@ vars <- c(med_income = "B06011_001",
           one_worker_hh = 'B08202_003',
           two_worker_hh = 'B08202_004',
           threemore_worker_hh = 'B08202_005',
+          total_worker = 'B08006_001',
+          total_wfh = 'B08006_017',
           hh_1person = 'B08201_007',
           hh_2person = 'B08201_013',
           hh_3person = 'B08201_019',
@@ -62,6 +64,14 @@ census <- get_acs(geography = "tract",
                   output = "wide",
                   geometry = T) %>%
   st_filter(sanjose_msa)
+
+tracts <- get_acs(geography = "tract",
+                  state = "CA",
+                  variables = "B06011_001",
+                  output = "wide",
+                  geometry = T) %>%
+  st_filter(sanjose_msa)
+
 
 
 ggplot(census) +
@@ -118,11 +128,36 @@ census <- census %>%
 
 ```
 
+# Create Alternative Dataset
+
+The main assumption here is that the industries that we have classified
+as "WFH" will experience a 40% decrease in work days commuting from the 
+baseline, i.e. from 5 days per week to 3 days per week.
+
+- generate assumption of % days work from home (e.g. 40%)
+- generate 40% wfh-able jobs and employees
+- generate: total workers - WFH - 40% * (WFH-able jobs + WFH-able employees)
+40% is an assumption
+
+```{r}
+census_alt <- census %>%
+  mutate(wfh_percent = .4,
+         
+    alt_total = )
+  
+
+
+
+
+```
+
 # Save Datasets
 
 ```{r}
 existing <- write_csv(census, "existing/existing_sanjose.csv")
 existing_spatial <- st_write(census, "existing/existing_sanjose.geojson")
+zones_sanjose <- st_write(tracts, "zones/zones_sanjose.geojson", append = F)
+
 
 
 ```
