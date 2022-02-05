@@ -1,6 +1,6 @@
 ---
 title: "Assignment02"
-author: "Megan Willis-Jackson"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
 date: "2/3/2022"
 output: html_document
 ---
