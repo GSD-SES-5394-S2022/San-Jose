@@ -12,14 +12,18 @@ library(ggplot2)
 library(sf)
 library(units)
 library(tigris)
-
+library(magrittr) # needs to be run every time you start R and want to use %>%
+library(dplyr)
+library(RColorBrewer)
+library(viridis) 
+library("GGally")
 
 ```
 
 # Load Variables
 
 ```{r}
-sanjose_msa <- core_based_statistical_areas() %>%
+sanjose_msa <- core_based_statistical_areas() %>% 
   filter(GEOID == "41940")
 
 # view(load_variables(2019, "acs5"))
@@ -71,12 +75,6 @@ tracts <- get_acs(geography = "tract",
                   output = "wide",
                   geometry = T) %>%
   st_filter(sanjose_msa)
-
-
-
-ggplot(census) +
-  geom_sf(aes(fill = med_incomeE), color = alpha("white", .1)) +
-  theme_void()
 
 #download employment data
 #NOTE: I think we also will need the LEHD residence area characteristics,
@@ -153,6 +151,67 @@ census_alt <- census %>%
   
 
 
+
+
+```
+
+
+```{r}
+#graphics generation
+map_color<- brewer.pal(5,"BuPu")
+map_color2<-brewer.pal(5,"PRGn")
+map_color3<-brewer.pal(5,"YlOrRd")
+
+
+overall <- ggplot(census_alt, 
+       aes(x = alt_wfh_emp/alt_total_emp,
+           y = med_incomeE,
+           size = no_veh_hhE/total_hhsE,
+           alpha=0.5
+           )) +
+  geom_point() +
+  scale_size_continuous(name = "percentage of wfh_change by median income") +
+  scale_x_continuous(name = "percentage work-from-home employment",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
+  scale_y_continuous(name = "median income",
+                     breaks = seq(0, 100000, by = 10000)) +
+  theme_minimal() +
+  theme(legend.key.size = unit(0.1, "cm"))
+
+overall
+  
+newdf<- census_alt[,c("med_incomeE","alt_wfh_emp","alt_wfh_jobs")]%>%st_set_geometry(NULL)
+
+ggcorr(newdf,palette = "RdBu",label=TRUE)
+
+ggplot(census) +
+  geom_sf(aes(fill = med_incomeE)) +
+  scale_fill_gradientn(colors=map_color)
+
+ggplot(census) +
+  geom_sf(aes(fill = total_jobs)) +
+  scale_fill_gradientn(colors=map_color)
+
+ggplot(census) +
+  geom_sf(aes(fill = total_emp)) +
+  scale_fill_gradientn(colors=map_color)
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_total_emp)) +
+  scale_fill_gradientn(colors=map_color2)
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_total_jobs)) +
+  scale_fill_gradientn(colors=map_color2)
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_wfh_emp)) +
+  scale_fill_gradientn(colors=map_color3)
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_wfh_jobs)) +
+  scale_fill_gradientn(colors=map_color3)
 
 
 ```
