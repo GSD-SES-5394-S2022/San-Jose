@@ -12,11 +12,11 @@ library(ggplot2)
 library(sf)
 library(units)
 library(tigris)
-library(magrittr) # needs to be run every time you start R and want to use %>%
+library(magrittr)
 library(dplyr)
 library(RColorBrewer)
 library(viridis) 
-library("GGally")
+library(GGally)
 
 ```
 
