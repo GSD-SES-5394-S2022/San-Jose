@@ -155,6 +155,11 @@ census_alt <- census %>%
 
 ```
 
+```{r}
+# overall statistics
+# summary(census$avg_hh_size)
+```
+
 
 ```{r}
 #graphics generation
