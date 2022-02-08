@@ -17,6 +17,7 @@ library(dplyr)
 library(RColorBrewer)
 library(viridis) 
 library(GGally)
+library(vtable)
 
 ```
 
@@ -126,6 +127,34 @@ census <- census %>%
 
 ```
 
+```{r}
+# overall statistics for the MSA, focusing on the most vulnerable population
+census <- census %>%
+  mutate(ratio_no_veh = no_veh_hhE / total_hhsE,
+         ratio_no_worker = no_worker_hhE / total_hhsE,
+         ratio_lt_10k = inc_lt_10kE / total_hhsE)
+
+sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), add.median = TRUE, title = 'Summary Statistics - Vulnerability Ratios', col.width = c(10))
+```
+
+```{r}
+# distributions for income and vehicle ownership
+
+hist_y <- ggplot(census) +
+  geom_histogram(aes(x = census$med_income),
+                 fill = "dodgerblue3")
+
+hist_y
+
+veh <- data.frame(veh_own = c("0","1","2","3","4+"), count = c(sum(census$no_veh_hhE), sum(census$one_veh_hhE), sum(census$two_veh_hhE), sum(census$three_veh_hhE), sum(census$fourmore_veh_hhE)))
+
+hist_veh <- ggplot(veh, aes(x = veh_own, y = count)) +
+  geom_bar(stat = "identity", fill = "firebrick3")
+
+hist_veh
+```
+
+
 # Create Alternative Dataset
 
 The main assumption here is that the industries that we have classified
@@ -154,12 +183,6 @@ census_alt <- census %>%
 
 
 ```
-
-```{r}
-# overall statistics
-# summary(census$avg_hh_size)
-```
-
 
 ```{r}
 #graphics generation
