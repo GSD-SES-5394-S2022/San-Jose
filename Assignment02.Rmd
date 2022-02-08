@@ -177,8 +177,9 @@ census_alt <- census %>%
          alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
          alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
          alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
-         alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - 
-                                 wfh_percent * WFH_emp), digits = 0)
+         alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - wfh_percent * WFH_emp, digits = 0),
+         wfh_impact_ratio = (WFH_jobs + WFH_emp) / (total_jobs + total_emp), digits = 2)
+
   
 
 
@@ -193,10 +194,11 @@ map_color2<-brewer.pal(5,"PRGn")
 map_color3<-brewer.pal(5,"YlOrRd")
 map_color4<-brewer.pal(5,"Oranges")
 map_color5<-brewer.pal(5,"PuRd")
+map_color6<-brewer.pal(5,"Greens")
 
 
 overall <- ggplot(census_alt, 
-       aes(x = alt_wfh_emp/alt_total_emp,
+       aes(x = WFH_emp/total_emp,#x = alt_wfh_emp/alt_total_emp,
            y = med_incomeE/1000,
            size = no_veh_hhE/total_hhsE)) +
   geom_point(alpha = 0.5) +
@@ -256,8 +258,8 @@ ggplot(census) +
   scale_fill_gradientn(colors=map_color5)
 
 ggplot(census_alt) +
-  geom_sf(aes(fill = ratio_lt_10k), size = 0.05) +
-  scale_fill_gradientn(colors=map_color5)
+  geom_sf(aes(fill = wfh_impact_ratio), size = 0.05) +
+  scale_fill_gradientn(colors=map_color6)
 
 ```
 
