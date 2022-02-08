@@ -142,14 +142,16 @@ sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), ad
 
 hist_y <- ggplot(census) +
   geom_histogram(aes(x = census$med_income),
-                 fill = "dodgerblue3")
+                 fill = "dodgerblue3") +
+  labs(y = "Count", x = "Median Income")
 
 hist_y
 
-veh <- data.frame(veh_own = c("0","1","2","3","4+"), count = c(sum(census$no_veh_hhE), sum(census$one_veh_hhE), sum(census$two_veh_hhE), sum(census$three_veh_hhE), sum(census$fourmore_veh_hhE)))
+veh <- data.frame(veh_own = c("0","1","2","3","4+"), count = c(sum(census$no_veh_hhE) / sum(census$total_hhsE), sum(census$one_veh_hhE) / sum(census$total_hhsE), sum(census$two_veh_hhE) / sum(census$total_hhsE), sum(census$three_veh_hhE) / sum(census$total_hhsE), sum(census$fourmore_veh_hhE) / sum(census$total_hhsE)))
 
 hist_veh <- ggplot(veh, aes(x = veh_own, y = count)) +
-  geom_bar(stat = "identity", fill = "firebrick3")
+  geom_bar(stat = "identity", fill = "firebrick3") +
+  labs(y = "Density", x = "Vehicles Owned by Household")
 
 hist_veh
 ```
