@@ -252,11 +252,11 @@ ggplot(census) +
 
 ggplot(census) +
   geom_sf(aes(fill = ratio_no_worker), size = 0.05) +
-  scale_fill_gradientn(colors=map_color7)
+  scale_fill_gradientn(colors=map_color5)
 
 ggplot(census) +
   geom_sf(aes(fill = ratio_lt_10k), size = 0.05) +
-  scale_fill_gradientn(colors=map_color5)
+  scale_fill_gradientn(colors=map_color7)
 
 ggplot(census_alt) +
   geom_sf(aes(fill = wfh_impact_ratio), size = 0.05) +
@@ -272,9 +272,6 @@ existing <- write_csv(census, "existing/existing_sanjose.csv", append = F)
 zones_sanjose <- st_write(tracts, "zones/zones_sanjose2.geojson", append = F)
 
 alternative <- write_csv(census_alt, "alternative/alternative_sanjose.csv", append = F)
-
-
-
 
 ```
 
