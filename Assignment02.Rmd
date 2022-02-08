@@ -267,11 +267,11 @@ ggplot(census_alt) +
 # Save Datasets
 
 ```{r}
-existing <- write_csv(census, "existing/existing_sanjose.csv", append = F)
+existing <- write_csv(census, "existing/data/existing_sanjose.csv", append = F)
 
 zones_sanjose <- st_write(tracts, "zones/zones_sanjose2.geojson", append = F)
 
-alternative <- write_csv(census_alt, "alternative/alternative_sanjose.csv", append = F)
+alternative <- write_csv(census_alt, "alternative/data/alternative_sanjose.csv", append = F)
 
 ```
 
