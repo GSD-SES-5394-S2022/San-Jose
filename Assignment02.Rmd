@@ -191,6 +191,8 @@ census_alt <- census %>%
 map_color<- brewer.pal(5,"BuPu")
 map_color2<-brewer.pal(5,"PRGn")
 map_color3<-brewer.pal(5,"YlOrRd")
+map_color4<-brewer.pal(5,"Oranges")
+map_color5<-brewer.pal(5,"PuRd")
 
 
 overall <- ggplot(census_alt, 
@@ -243,6 +245,17 @@ ggplot(census_alt) +
   geom_sf(aes(fill = alt_wfh_jobs)) +
   scale_fill_gradientn(colors=map_color3)
 
+ggplot(census) +
+  geom_sf(aes(fill = ratio_no_veh), size = 0.05) +
+  scale_fill_gradientn(colors=map_color4)
+
+ggplot(census) +
+  geom_sf(aes(fill = ratio_no_worker), size = 0.05) +
+  scale_fill_gradientn(colors=map_color)
+
+ggplot(census) +
+  geom_sf(aes(fill = ratio_lt_10k), size = 0.05) +
+  scale_fill_gradientn(colors=map_color5)
 
 ```
 
