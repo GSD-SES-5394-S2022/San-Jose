@@ -70,13 +70,18 @@ census <- get_acs(geography = "tract",
                   geometry = T) %>%
   st_filter(sanjose_msa)
 
-tracts <- get_acs(geography = "tract",
+ca_tracts <- get_acs(geography = "tract",
                   state = "CA",
                   variables = "B06011_001",
                   output = "wide",
-                  geometry = T) %>%
-  st_filter(sanjose_msa)
+                  geometry = T)
 
+sj_centroids <- st_centroid(ca_tracts) %>%
+  st_filter(sanjose_msa) 
+  
+tracts <- ca_tracts %>%
+  st_filter(sj_centroids)
+  
 #download employment data
 #NOTE: I think we also will need the LEHD residence area characteristics,
 #to determine which RESIDENTS will no longer have to commute, in addition to 
