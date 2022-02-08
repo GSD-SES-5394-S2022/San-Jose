@@ -195,6 +195,7 @@ map_color3<-brewer.pal(5,"YlOrRd")
 map_color4<-brewer.pal(5,"Oranges")
 map_color5<-brewer.pal(5,"PuRd")
 map_color6<-brewer.pal(5,"Greens")
+map_color7<-brewer.pal(5,"Reds")
 
 
 overall <- ggplot(census_alt, 
@@ -218,7 +219,7 @@ newdf<- census_alt[,c("med_incomeE","alt_wfh_emp","alt_wfh_jobs")]%>%st_set_geom
 ggcorr(newdf,palette = "RdBu",label=TRUE)
 
 ggplot(census) +
-  geom_sf(aes(fill = med_incomeE)) +
+  geom_sf(aes(fill = med_incomeE), size = 0.05) +
   scale_fill_gradientn(colors=map_color)
 
 ggplot(census) +
@@ -251,7 +252,7 @@ ggplot(census) +
 
 ggplot(census) +
   geom_sf(aes(fill = ratio_no_worker), size = 0.05) +
-  scale_fill_gradientn(colors=map_color)
+  scale_fill_gradientn(colors=map_color7)
 
 ggplot(census) +
   geom_sf(aes(fill = ratio_lt_10k), size = 0.05) +
