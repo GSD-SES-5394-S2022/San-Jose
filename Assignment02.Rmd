@@ -275,7 +275,7 @@ ggplot(census) +
 
 ggplot(census_alt) +
   geom_sf(aes(fill = wfh_impact_ratio), size = 0.05, color = NA) +
-  scale_fill_gradientn(colors=map_color6) +
+  scale_fill_gradientn(name = "WFH Impact Ratio", colors=map_color6) +
   theme_void()
 
 ```
