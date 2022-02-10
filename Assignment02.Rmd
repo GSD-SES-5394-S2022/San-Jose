@@ -306,12 +306,8 @@ job_change <- ggplot(census_alt) +
                        labels = paste(prettyNum(size_breaks, big.mark = ","), "jobs")) +
   theme_void()
 
-ggsave("graphics/employee_commuting_change.jpeg", emp_change, device = "jpeg", 
-       height = 3.5,
-       width = 3.5)
-ggsave("graphics/job_commuting_change.jpeg", job_change, device = "jpeg",
-       height = 3.5,
-       width = 3.5)
+ggsave("graphics/employee_commuting_change.jpeg", emp_change, device = "jpeg")
+ggsave("graphics/job_commuting_change.jpeg", job_change, device = "jpeg")
 
 
 ```
