@@ -1,0 +1,333 @@
+---
+title: "Assignment02"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
+date: "2/3/2022"
+output: html_document
+---
+
+```{r libraries, echo=F, message=F, warning=F}
+library(tidyverse)
+library(tidycensus)
+library(ggplot2)
+library(sf)
+library(units)
+library(tigris)
+library(magrittr)
+library(dplyr)
+library(RColorBrewer)
+library(viridis) 
+library(GGally)
+library(vtable)
+
+```
+
+# Load Variables
+
+```{r}
+sanjose_msa <- core_based_statistical_areas() %>% 
+  filter(GEOID == "41940")
+
+# view(load_variables(2019, "acs5"))
+
+vars <- c(med_income = "B06011_001",
+          total_hhs = 'B08203_001',
+          no_veh_hh = 'B08203_002',
+          one_veh_hh = 'B08201_003',
+          two_veh_hh = 'B08201_004',
+          three_veh_hh = 'B08201_005',
+          fourmore_veh_hh = 'B08201_006',
+          no_worker_hh = 'B08202_002',
+          one_worker_hh = 'B08202_003',
+          two_worker_hh = 'B08202_004',
+          threemore_worker_hh = 'B08202_005',
+          total_worker = 'B08006_001',
+          total_wfh = 'B08006_017',
+          hh_1person = 'B08201_007',
+          hh_2person = 'B08201_013',
+          hh_3person = 'B08201_019',
+          hh_4person_plus = 'B08201_025',
+          inc_lt_10k = 'B19001_002',
+          inc_btw_10k_15k = 'B19001_003',
+          inc_btw_15k_20k = 'B19001_004',
+          inc_btw_20k_25k = 'B19001_005',
+          inc_btw_25k_30k = 'B19001_006',
+          inc_btw_30k_35k = 'B19001_007',
+          inc_btw_35k_40k = 'B19001_008',
+          inc_btw_40k_45k = 'B19001_009',
+          inc_btw_45k_50k = 'B19001_010',
+          inc_btw_50k_60k = 'B19001_011',
+          inc_btw_60k_75k = 'B19001_012',
+          inc_btw_75k_100k = 'B19001_013',
+          inc_btw_100k_125k = 'B19001_014',
+          inc_btw_125k_150k = 'B19001_015',
+          inc_btw_150k_200k = 'B19001_016',
+          inc_gt_200k = 'B19001_017') 
+
+census <- get_acs(geography = "tract",
+                  state = "CA",
+                  variables = vars,
+                  output = "wide",
+                  geometry = T) %>%
+  st_filter(sanjose_msa)
+
+ca_tracts <- get_acs(geography = "tract",
+                  state = "CA",
+                  variables = "B06011_001",
+                  output = "wide",
+                  geometry = T)
+
+sj_centroids <- st_centroid(ca_tracts) %>%
+  st_filter(sanjose_msa) 
+  
+tracts <- ca_tracts %>%
+  st_filter(sj_centroids)
+  
+#download employment data
+#NOTE: I think we also will need the LEHD residence area characteristics,
+#to determine which RESIDENTS will no longer have to commute, in addition to 
+#which jobs in the MSA will no longer have commuters.
+
+#creates new variables, including a WFH variable which
+#assumes that the job is able to be at least partially remote.
+lehd_blocks_jobs <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/wac/ca_wac_S000_JT00_2019.csv.gz", 
+                             show_col_types = F) %>%
+  rename(total_jobs = C000) %>%
+  mutate(basic_jobs = CNS01+CNS02+CNS03+CNS04+CNS05+CNS06+CNS08+CNS09) %>%
+  rename(retail_jobs = CNS07) %>%
+  mutate(service_jobs = total_jobs - basic_jobs - retail_jobs,
+         WFH_jobs = CNS09+CNS10+CNS12+CNS13+CNS19+CNS20) %>%
+  select(w_geocode, total_jobs, basic_jobs, retail_jobs, service_jobs, WFH_jobs)
+
+#load the residence area characteristics
+# lehd_blocks_emp <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/rac/ca_rac_S000_JT00_2019.csv.gz",
+#                             show_col_types = F) %>%
+#   rename(total_emp = C000) %>%
+#   mutate(basic_emp = CNS01+CNS02+CNS03+CNS04+CNS05+CNS06+CNS08+CNS09) %>%
+#   rename(retail_emp = CNS07) %>%
+#   mutate(service_emp = total_emp - basic_emp - retail_emp,
+#          WFH_emp = CNS09+CNS10+CNS12+CNS13+CNS19+CNS20) %>%
+#   select(h_geocode, total_emp, basic_emp, retail_emp, service_emp, WFH_emp)
+
+
+#collapse lehd variables to census tracts
+lehd_tracts_jobs <- lehd_blocks_jobs %>%
+  mutate(w_geocode = as.character(w_geocode)) %>%
+  mutate(GEOID = substr(w_geocode, 1, 11)) %>%
+  select(-w_geocode) %>%
+  group_by(GEOID) %>%
+  summarise(across(everything(), ~sum(.))) 
+
+# lehd_tracts_emp <- lehd_blocks_emp %>%
+#   mutate(h_geocode = as.character(h_geocode)) %>%
+#   mutate(GEOID = substr(h_geocode, 1, 11)) %>%
+#   select(-h_geocode) %>%
+#   group_by(GEOID) %>%
+#   summarise(across(everything(), ~sum(.))) 
+
+census <- census %>%
+  left_join(lehd_tracts_jobs, by = "GEOID") %>%
+  left_join(lehd_tracts_emp, by = "GEOID") %>%
+  select(-contains("M", ignore.case = F))
+
+
+```
+
+```{r}
+# overall statistics for the MSA, focusing on the most vulnerable population
+census <- census %>%
+  mutate(ratio_no_veh = no_veh_hhE / total_hhsE,
+         ratio_no_worker = no_worker_hhE / total_hhsE,
+         ratio_lt_10k = inc_lt_10kE / total_hhsE)
+
+sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), add.median = TRUE, title = 'Summary Statistics - Vulnerability Ratios', col.width = c(10))
+```
+
+```{r}
+# distributions for income and vehicle ownership
+
+hist_y <- ggplot(census) +
+  geom_histogram(aes(x = census$med_income),
+                 fill = "dodgerblue3") +
+  labs(y = "Count", x = "Median Income")
+
+hist_y
+
+veh <- data.frame(veh_own = c("0","1","2","3","4+"), count = c(sum(census$no_veh_hhE) / sum(census$total_hhsE), sum(census$one_veh_hhE) / sum(census$total_hhsE), sum(census$two_veh_hhE) / sum(census$total_hhsE), sum(census$three_veh_hhE) / sum(census$total_hhsE), sum(census$fourmore_veh_hhE) / sum(census$total_hhsE)))
+
+hist_veh <- ggplot(veh, aes(x = veh_own, y = count)) +
+  geom_bar(stat = "identity", fill = "firebrick3") +
+  labs(y = "Density", x = "Vehicles Owned by Household")
+
+hist_veh
+```
+
+
+# Create Alternative Dataset
+
+The main assumption here is that the industries that we have classified
+as "WFH" will experience a 40% decrease in work days commuting from the 
+baseline, i.e. from 5 days per week to 3 days per week.
+
+- generate assumption of % days work from home (e.g. 40%)
+- generate 40% wfh-able jobs and employees
+- generate: total workers - WFH - 40% * (WFH-able jobs + WFH-able employees)
+40% is an assumption
+- assume people WFH is not counted in the total jobs
+- assume that there is negligible overlap between people working in a tract and living 
+in that tract. (based on random sampling of LEHD data)
+
+```{r}
+census_alt <- census %>%
+  mutate(wfh_percent = .4,
+         alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
+         alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
+         alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
+         alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - wfh_percent 
+                               * WFH_emp, digits = 0),
+         wfh_impact_ratio = round((WFH_jobs + WFH_emp) / (total_jobs + total_emp), digits = 2),
+         change_commuting_emp = alt_total_emp - total_emp,
+         change_commuting_jobs = alt_total_jobs - total_jobs)
+
+  
+
+
+
+
+```
+
+```{r}
+#graphics generation
+map_color<- brewer.pal(5,"BuPu")
+map_color2<-brewer.pal(5,"PRGn")
+map_color3<-brewer.pal(5,"YlOrRd")
+map_color4<-brewer.pal(5,"Oranges")
+map_color5<-brewer.pal(5,"PuRd")
+map_color6<-brewer.pal(5,"Greens")
+map_color7<-brewer.pal(5,"Reds")
+
+
+overall <- ggplot(census_alt, 
+       aes(x = WFH_emp/total_emp,#x = alt_wfh_emp/alt_total_emp,
+           y = med_incomeE/1000,
+           size = no_veh_hhE/total_hhsE)) +
+  geom_point(alpha = 0.5) +
+  scale_size_continuous(name = "% of households\n with no vehicles") +
+  scale_x_continuous(name = "Employees able to WFH / Total employees",
+                     breaks = seq(0, 1, by = 0.1),
+                     labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
+  scale_y_continuous(name = "Median Income (in thousands)",
+                     breaks = seq(0, 120, by = 10)) +
+  theme_minimal() +
+  theme(legend.key.size = unit(0.1, "cm"))
+
+overall
+  
+newdf<- census_alt[,c("med_incomeE","alt_wfh_emp","alt_wfh_jobs")]%>%st_set_geometry(NULL)
+
+ggcorr(newdf,palette = "RdBu",label=TRUE)
+
+ggplot(census) +
+  geom_sf(aes(fill = med_incomeE), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color) +
+  theme_void()
+
+ggplot(census) +
+  geom_sf(aes(fill = total_jobs), color = NA) +
+  scale_fill_gradientn(colors=map_color) +
+  theme_void()
+
+ggplot(census) +
+  geom_sf(aes(fill = total_emp), color = NA) +
+  scale_fill_gradientn(colors=map_color) +
+  theme_void()
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_total_emp), color = NA) +
+  scale_fill_gradientn(name = "Location of WFH Employees\nin Alternative Scenario",
+                       breaks = size_breaks <- seq(0, 6000, by = 1000),
+                       labels = paste(prettyNum(size_breaks, big.mark = ","), "Employees"),
+                       colors=map_color2) +
+  theme_void()
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_total_jobs), color = NA) +
+  scale_fill_gradientn(name = "Location of WFH Jobs in Alternative Scenario",
+                       breaks = size_breaks <- seq(0, 60000, by = 20000),
+                       labels = paste(prettyNum(size_breaks, big.mark = ","), "Jobs"),
+                       colors=map_color2) +
+  theme_void()
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_wfh_emp), color = NA) +
+  scale_fill_gradientn(colors=map_color3) +
+  theme_void()
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = alt_wfh_jobs), color = NA) +
+  scale_fill_gradientn(colors=map_color3) +
+  theme_void()
+
+ggplot(census) +
+  geom_sf(aes(fill = ratio_no_veh), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color4) +
+  theme_void()
+
+ggplot(census) +
+  geom_sf(aes(fill = ratio_no_worker), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color5) +
+  theme_void()
+
+ggplot(census) +
+  geom_sf(aes(fill = ratio_lt_10k), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color7) +
+  theme_void()
+
+ggplot(census_alt) +
+  geom_sf(aes(fill = wfh_impact_ratio), size = 0.05, color = NA) +
+  scale_fill_gradientn(name = "WFH Impact Ratio",
+                       breaks = size_breaks <- seq(0, 1,  by = 0.2),
+                       labels = size_breaks,
+                       colors=map_color6) +
+  theme_void()
+
+
+emp_change <- ggplot(census_alt) +
+  geom_sf(aes(fill = change_commuting_emp), color = NA) +
+  scale_fill_viridis_c(name = "Change in Workers Commuting per Day",
+                       breaks = size_breaks <- seq(-1600, 0, by = 400),
+                       labels = paste(prettyNum(size_breaks, big.mark = ","), "workers")) +
+  theme_void()
+
+
+job_change <- ggplot(census_alt) +
+  geom_sf(aes(fill = change_commuting_jobs), color = NA) +
+  scale_fill_viridis_c(name = "Change in Jobs Requiring Commuting per Day",
+                       breaks = size_breaks <- seq(-12500, 0, by = 2500),
+                       labels = paste(prettyNum(size_breaks, big.mark = ","), "jobs")) +
+  theme_void()
+
+ggsave("graphics/employee_commuting_change.jpeg", emp_change, device = "jpeg")
+ggsave("graphics/job_commuting_change.jpeg", job_change, device = "jpeg")
+
+
+```
+
+# Save Datasets
+
+```{r}
+existing <- write_csv(census, "existing/data/existing_sanjose.csv", append = F)
+
+zones_sanjose <- write_sf(tracts, "zones/zones_sanjose2.geojson")
+
+alternative <- write_csv(census_alt, "alternative/data/alternative_sanjose.csv", append = F)
+
+```
+
+
+
+
+
+
+
+
+
