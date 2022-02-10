@@ -146,7 +146,7 @@ sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), ad
 # distributions for income and vehicle ownership
 
 hist_y <- ggplot(census) +
-  geom_histogram(aes(x = census$med_income),
+  geom_histogram(aes(x = med_income),
                  fill = "dodgerblue3") +
   labs(y = "Count", x = "Median Income")
 
@@ -224,48 +224,59 @@ newdf<- census_alt[,c("med_incomeE","alt_wfh_emp","alt_wfh_jobs")]%>%st_set_geom
 ggcorr(newdf,palette = "RdBu",label=TRUE)
 
 ggplot(census) +
-  geom_sf(aes(fill = med_incomeE), size = 0.05) +
-  scale_fill_gradientn(colors=map_color)
+  geom_sf(aes(fill = med_incomeE), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color) +
+  theme_void()
 
 ggplot(census) +
-  geom_sf(aes(fill = total_jobs)) +
-  scale_fill_gradientn(colors=map_color)
+  geom_sf(aes(fill = total_jobs), color = NA) +
+  scale_fill_gradientn(colors=map_color) +
+  theme_void()
 
 ggplot(census) +
-  geom_sf(aes(fill = total_emp)) +
-  scale_fill_gradientn(colors=map_color)
+  geom_sf(aes(fill = total_emp), color = NA) +
+  scale_fill_gradientn(colors=map_color) +
+  theme_void()
 
 ggplot(census_alt) +
-  geom_sf(aes(fill = alt_total_emp)) +
-  scale_fill_gradientn(colors=map_color2)
+  geom_sf(aes(fill = alt_total_emp), color = NA) +
+  scale_fill_gradientn(colors=map_color2) +
+  theme_void()
 
 ggplot(census_alt) +
-  geom_sf(aes(fill = alt_total_jobs)) +
-  scale_fill_gradientn(colors=map_color2)
+  geom_sf(aes(fill = alt_total_jobs), color = NA) +
+  scale_fill_gradientn(colors=map_color2) +
+  theme_void()
 
 ggplot(census_alt) +
-  geom_sf(aes(fill = alt_wfh_emp)) +
-  scale_fill_gradientn(colors=map_color3)
+  geom_sf(aes(fill = alt_wfh_emp), color = NA) +
+  scale_fill_gradientn(colors=map_color3) +
+  theme_void()
 
 ggplot(census_alt) +
-  geom_sf(aes(fill = alt_wfh_jobs)) +
-  scale_fill_gradientn(colors=map_color3)
+  geom_sf(aes(fill = alt_wfh_jobs), color = NA) +
+  scale_fill_gradientn(colors=map_color3) +
+  theme_void()
 
 ggplot(census) +
-  geom_sf(aes(fill = ratio_no_veh), size = 0.05) +
-  scale_fill_gradientn(colors=map_color4)
+  geom_sf(aes(fill = ratio_no_veh), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color4) +
+  theme_void()
 
 ggplot(census) +
-  geom_sf(aes(fill = ratio_no_worker), size = 0.05) +
-  scale_fill_gradientn(colors=map_color5)
+  geom_sf(aes(fill = ratio_no_worker), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color5) +
+  theme_void()
 
 ggplot(census) +
-  geom_sf(aes(fill = ratio_lt_10k), size = 0.05) +
-  scale_fill_gradientn(colors=map_color7)
+  geom_sf(aes(fill = ratio_lt_10k), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color7) +
+  theme_void()
 
 ggplot(census_alt) +
-  geom_sf(aes(fill = wfh_impact_ratio), size = 0.05) +
-  scale_fill_gradientn(colors=map_color6)
+  geom_sf(aes(fill = wfh_impact_ratio), size = 0.05, color = NA) +
+  scale_fill_gradientn(colors=map_color6) +
+  theme_void()
 
 ```
 
