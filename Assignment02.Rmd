@@ -294,7 +294,7 @@ ggplot(census_alt) +
 ```{r}
 existing <- write_csv(census, "existing/data/existing_sanjose.csv", append = F)
 
-zones_sanjose <- st_write(tracts, "zones/zones_sanjose2.geojson", append = F)
+zones_sanjose <- write_sf(tracts, "zones/zones_sanjose2.geojson")
 
 alternative <- write_csv(census_alt, "alternative/data/alternative_sanjose.csv", append = F)
 
