@@ -240,12 +240,18 @@ ggplot(census) +
 
 ggplot(census_alt) +
   geom_sf(aes(fill = alt_total_emp), color = NA) +
-  scale_fill_gradientn(colors=map_color2) +
+  scale_fill_gradientn(name = "Location of WFH Employees\nin Alternative Scenario",
+                       breaks = size_breaks <- seq(0, 6000, by = 1000),
+                       labels = paste(prettyNum(size_breaks, big.mark = ","), "Employees"),
+                       colors=map_color2) +
   theme_void()
 
 ggplot(census_alt) +
   geom_sf(aes(fill = alt_total_jobs), color = NA) +
-  scale_fill_gradientn(colors=map_color2) +
+  scale_fill_gradientn(name = "Location of WFH Jobs in Alternative Scenario",
+                       breaks = size_breaks <- seq(0, 60000, by = 20000),
+                       labels = paste(prettyNum(size_breaks, big.mark = ","), "Jobs"),
+                       colors=map_color2) +
   theme_void()
 
 ggplot(census_alt) +
@@ -275,7 +281,10 @@ ggplot(census) +
 
 ggplot(census_alt) +
   geom_sf(aes(fill = wfh_impact_ratio), size = 0.05, color = NA) +
-  scale_fill_gradientn(name = "WFH Impact Ratio", colors=map_color6) +
+  scale_fill_gradientn(name = "WFH Impact Ratio",
+                       breaks = size_breaks <- seq(0, 1,  by = 0.2),
+                       labels = size_breaks,
+                       colors=map_color6) +
   theme_void()
 
 ```
