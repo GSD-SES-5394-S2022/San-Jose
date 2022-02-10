@@ -83,19 +83,12 @@ tracts <- ca_tracts %>%
   st_filter(sj_centroids)
   
 #download employment data
-#NOTE: I think we also will need the LEHD residence area characteristics,
-#to determine which RESIDENTS will no longer have to commute, in addition to 
-#which jobs in the MSA will no longer have commuters.
-
-#creates new variables, including a WFH variable which
-#assumes that the job is able to be at least partially remote.
 lehd_blocks_jobs <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/wac/ca_wac_S000_JT00_2019.csv.gz", 
                              show_col_types = F) %>%
   rename(total_jobs = C000) %>%
   mutate(basic_jobs = CNS01+CNS02+CNS03+CNS04+CNS05+CNS06+CNS08+CNS09) %>%
   rename(retail_jobs = CNS07) %>%
-  mutate(service_jobs = total_jobs - basic_jobs - retail_jobs,
-         WFH_jobs = CNS09+CNS10+CNS12+CNS13+CNS19+CNS20) %>%
+  mutate(service_jobs = total_jobs - basic_jobs - retail_jobs) %>%
   select(w_geocode, total_jobs, basic_jobs, retail_jobs, service_jobs, WFH_jobs)
 
 #load the residence area characteristics
