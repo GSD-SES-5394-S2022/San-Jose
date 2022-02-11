@@ -29,6 +29,7 @@ sanjose_msa <- core_based_statistical_areas() %>%
 
 view(load_variables(2019, "acs5"))
 
+#specify ACS variables for inclusion
 vars <- c(med_income = "B06011_001",
           total_hhs = 'B08203_001',
           no_veh_hh = 'B08203_002',
@@ -63,6 +64,7 @@ vars <- c(med_income = "B06011_001",
           total_worker = 'B08301_001',
           total_wfh = 'B08301_021') 
 
+#save ACS variables
 census <- get_acs(geography = "tract",
                   state = "CA",
                   variables = vars,
@@ -76,9 +78,10 @@ ca_tracts <- get_acs(geography = "tract",
                   output = "wide",
                   geometry = T)
 
+#specify location as San Jose MSA  
 sj_centroids <- st_centroid(ca_tracts) %>%
   st_filter(sanjose_msa) 
-  
+
 tracts <- ca_tracts %>%
   st_filter(sj_centroids)
   
@@ -92,7 +95,7 @@ lehd_blocks_jobs <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/w
   select(w_geocode, total_jobs, basic_jobs, retail_jobs, service_jobs)
 
 
-#collapse lehd variables to census tracts
+#collapse LEHD variables to census tracts
 lehd_tracts_jobs <- lehd_blocks_jobs %>%
   mutate(w_geocode = as.character(w_geocode)) %>%
   mutate(GEOID = substr(w_geocode, 1, 11)) %>%
@@ -100,6 +103,7 @@ lehd_tracts_jobs <- lehd_blocks_jobs %>%
   group_by(GEOID) %>%
   summarise(across(everything(), ~sum(.))) 
 
+#join ACS data with LEHD data
 census <- census %>%
   left_join(lehd_tracts_jobs, by = "GEOID") %>%
   select(-contains("M", ignore.case = F))
