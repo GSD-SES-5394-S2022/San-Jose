@@ -89,17 +89,7 @@ lehd_blocks_jobs <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/w
   mutate(basic_jobs = CNS01+CNS02+CNS03+CNS04+CNS05+CNS06+CNS08+CNS09) %>%
   rename(retail_jobs = CNS07) %>%
   mutate(service_jobs = total_jobs - basic_jobs - retail_jobs) %>%
-  select(w_geocode, total_jobs, basic_jobs, retail_jobs, service_jobs, WFH_jobs)
-
-#load the residence area characteristics
-# lehd_blocks_emp <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/rac/ca_rac_S000_JT00_2019.csv.gz",
-#                             show_col_types = F) %>%
-#   rename(total_emp = C000) %>%
-#   mutate(basic_emp = CNS01+CNS02+CNS03+CNS04+CNS05+CNS06+CNS08+CNS09) %>%
-#   rename(retail_emp = CNS07) %>%
-#   mutate(service_emp = total_emp - basic_emp - retail_emp,
-#          WFH_emp = CNS09+CNS10+CNS12+CNS13+CNS19+CNS20) %>%
-#   select(h_geocode, total_emp, basic_emp, retail_emp, service_emp, WFH_emp)
+  select(w_geocode, total_jobs, basic_jobs, retail_jobs, service_jobs)
 
 
 #collapse lehd variables to census tracts
@@ -110,16 +100,8 @@ lehd_tracts_jobs <- lehd_blocks_jobs %>%
   group_by(GEOID) %>%
   summarise(across(everything(), ~sum(.))) 
 
-# lehd_tracts_emp <- lehd_blocks_emp %>%
-#   mutate(h_geocode = as.character(h_geocode)) %>%
-#   mutate(GEOID = substr(h_geocode, 1, 11)) %>%
-#   select(-h_geocode) %>%
-#   group_by(GEOID) %>%
-#   summarise(across(everything(), ~sum(.))) 
-
 census <- census %>%
   left_join(lehd_tracts_jobs, by = "GEOID") %>%
-  left_join(lehd_tracts_emp, by = "GEOID") %>%
   select(-contains("M", ignore.case = F))
 
 
