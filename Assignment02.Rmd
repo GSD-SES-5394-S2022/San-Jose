@@ -164,14 +164,19 @@ things to do:
 ```{r}
 census_alt <- census %>%
   mutate(wfh_percent = .4,
-         alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
-         alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
-         alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
-         alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - wfh_percent 
-                               * WFH_emp, digits = 0),
-         wfh_impact_ratio = round((WFH_jobs + WFH_emp) / (total_jobs + total_emp), digits = 2),
-         change_commuting_emp = alt_total_emp - total_emp,
-         change_commuting_jobs = alt_total_jobs - total_jobs)
+         alt_service_jobs = service_jobs * (1 - wfh_percent),
+         
+         
+         
+  )
+         # alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
+         # alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
+         # alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
+         # alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - wfh_percent 
+         #                       * WFH_emp, digits = 0),
+         # wfh_impact_ratio = round((WFH_jobs + WFH_emp) / (total_jobs + total_emp), digits = 2),
+         # change_commuting_emp = alt_total_emp - total_emp,
+         # change_commuting_jobs = alt_total_jobs - total_jobs)
 
   
 
