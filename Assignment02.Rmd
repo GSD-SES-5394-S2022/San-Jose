@@ -27,7 +27,7 @@ library(vtable)
 sanjose_msa <- core_based_statistical_areas() %>% 
   filter(GEOID == "41940")
 
-# view(load_variables(2019, "acs5"))
+view(load_variables(2019, "acs5"))
 
 vars <- c(med_income = "B06011_001",
           total_hhs = 'B08203_001',
@@ -40,8 +40,6 @@ vars <- c(med_income = "B06011_001",
           one_worker_hh = 'B08202_003',
           two_worker_hh = 'B08202_004',
           threemore_worker_hh = 'B08202_005',
-          total_worker = 'B08006_001',
-          total_wfh = 'B08006_017',
           hh_1person = 'B08201_007',
           hh_2person = 'B08201_013',
           hh_3person = 'B08201_019',
@@ -61,7 +59,9 @@ vars <- c(med_income = "B06011_001",
           inc_btw_100k_125k = 'B19001_014',
           inc_btw_125k_150k = 'B19001_015',
           inc_btw_150k_200k = 'B19001_016',
-          inc_gt_200k = 'B19001_017') 
+          inc_gt_200k = 'B19001_017',
+          total_worker = 'B08301_001',
+          total_wfh = 'B08301_021') 
 
 census <- get_acs(geography = "tract",
                   state = "CA",
@@ -112,7 +112,8 @@ census <- census %>%
 census <- census %>%
   mutate(ratio_no_veh = no_veh_hhE / total_hhsE,
          ratio_no_worker = no_worker_hhE / total_hhsE,
-         ratio_lt_10k = inc_lt_10kE / total_hhsE)
+         ratio_lt_10k = inc_lt_10kE / total_hhsE,
+         non_wfh = total_workerE - total_wfhE)
 
 sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), add.median = TRUE, title = 'Summary Statistics - Vulnerability Ratios', col.width = c(10))
 ```
@@ -150,6 +151,15 @@ baseline, i.e. from 5 days per week to 3 days per week.
 - assume people WFH is not counted in the total jobs
 - assume that there is negligible overlap between people working in a tract and living 
 in that tract. (based on random sampling of LEHD data)
+
+
+o	Reduce number of service jobs (make note not actually reducing jobs, just commuting), and reduce number of people who don’t work from home and increase num of people who do work 
+
+things to do:
+- ACS variables on people who work from home and people who don't, existing dataset
+- alt dataset:
+  - Decrease people who don't work from home by 40% and add that value to people who do WFH
+  - decrease the amount of service jobs by 40%
 
 ```{r}
 census_alt <- census %>%
