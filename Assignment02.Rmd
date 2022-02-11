@@ -165,10 +165,12 @@ things to do:
 census_alt <- census %>%
   mutate(wfh_percent = .4,
          alt_service_jobs = service_jobs * (1 - wfh_percent),
-         
-         
-         
-  )
+         jobs_change = service_jobs * wfh_percent,
+         commuter_change = non_wfh * wfh_percent,
+         alt_non_wfh = non_wfh - commuter_change,
+         alt_wfh = total_wfhE + commuter_change)
+
+
          # alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
          # alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
          # alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
@@ -184,6 +186,35 @@ census_alt <- census %>%
 
 
 ```
+
+# Generate Graphics
+
+```{r}
+
+#create a function to help standardize maps. Can be updated as needed
+chlor_map <- function(df, variable, pal = NULL, title = NULL) {
+  ggplot(df) +
+    geom_sf(aes(fill = .data[[variable]]), color = NA) +
+  scale_fill_gradientn(name = title,
+                       colors = pal) +
+    theme_void()
+
+}
+
+chlor_map(census_alt, "commuter_change", pal = map_color, 
+          title = "Commuters\nTransitioned\nto WFH")
+
+
+chlor_map(census_alt, "alt_wfh", pal = map_color6,
+          title = "Primarily WFH in\nAlternative Scenario")
+
+
+chlor_map(census_alt, "jobs_change", pal = map_color7,
+          title = "Jobs Transitioned\nto WFH in\nAlternative Scenario")
+
+
+```
+
 
 ```{r}
 #graphics generation
