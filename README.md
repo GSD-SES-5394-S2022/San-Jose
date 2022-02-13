@@ -20,4 +20,4 @@ Under a hypothesis of upcoming paradigms that imply working from home on a twice
 
 ## Repository Structure
 
-The repository consists of
+The repository consists of R markdowns corresponding to each analytical assignment, and four folders storing the outcomes. 'Existing' and 'Alternative' contain the datasets of the current conditions, and of those the forecast is expecting, respectively. 'Zones' include spatial information about the census tracts of the San Jose MSA in GeoJSON format. Finally, 'Graphics' stores some outputs from the analytical assignments. 
