@@ -207,16 +207,22 @@ chlor_map <- function(df, variable, pal = NULL, title = NULL) {
 
 }
 
-chlor_map(census_alt, "commuter_change", pal = map_color, 
-          title = "Commuters\nTransitioned\nto WFH")
+wfhemp_change_map <- chlor_map(census_alt, "commuter_change", pal = map_color,
+                             title = "Commuters\nTransitioned\nto WFH")
 
 
-chlor_map(census_alt, "alt_wfh", pal = map_color,
-          title = "Primarily WFH in\nAlternative Scenario")
+alt_wfhemp_map <- chlor_map(census_alt, "alt_wfh", pal = map_color,
+                            title = "Primarily WFH in\nAlternative Scenario")
 
 
-chlor_map(census_alt, "jobs_change", pal = map_color,
-          title = "Jobs Transitioned\nto WFH in\nAlternative Scenario")
+wfhjobs_change_map <- chlor_map(census_alt, "jobs_change", pal = map_color,
+                                title = "Jobs Transitioned\nto WFH in\nAlternative Scenario")
+
+
+ggsave("graphics/employee_commuting_change.jpeg", wfhemp_change_map, device = "jpeg")
+ggsave("graphics/job_commuting_change.jpeg", wfhjobs_change_map, device = "jpeg")
+ggsave("graphics/employee_wfh_map.jpeg", alt_wfhemp_map, device = "jpeg")
+
 
 
 ```
@@ -244,87 +250,37 @@ overall
 newdf <- census_alt[,c("med_incomeE","alt_wfh","alt_service_jobs")] %>% 
   st_set_geometry(NULL)
 
-ggcorr(newdf,palette = "RdBu",label=TRUE)
+corr <- ggcorr(newdf,palette = "RdBu",label=TRUE)
 
-chlor_map(census, "med_incomeE", pal = map_color,
-          title = "Median Income")
+income_map <- chlor_map(census, "med_incomeE", pal = map_color,
+                        title = "Median Income")
 
-chlor_map(census, "total_jobs", pal = map_color,
-          title = "Existing Total Jobs")
+jobs_map <- chlor_map(census, "total_jobs", pal = map_color,
+                      title = "Existing Total Jobs")
 
+employees_map <- chlor_map(census, "total_workerE", pal = map_color,
+                           title = "Existing Total Employees")
 
-ggplot(census) +
-  geom_sf(aes(fill = total_emp), color = NA) +
-  scale_fill_gradientn(colors=map_color) +
-  theme_void()
+noveh_map <- chlor_map(census, "ratio_no_veh", pal = map_color,
+                       title = "Ratio Households with\nNo Vehicle to\nOne or More")
 
-ggplot(census_alt) +
-  geom_sf(aes(fill = alt_total_emp), color = NA) +
-  scale_fill_gradientn(name = "Location of WFH Employees\nin Alternative Scenario",
-                       breaks = size_breaks <- seq(0, 6000, by = 1000),
-                       labels = paste(prettyNum(size_breaks, big.mark = ","), "Employees"),
-                       colors=map_color2) +
-  theme_void()
+noworker_map <- chlor_map(census, "ratio_no_worker", pal = map_color,
+                          title = "Ratio Households with\nNo Workers to\nOne or More")
 
-ggplot(census_alt) +
-  geom_sf(aes(fill = alt_total_jobs), color = NA) +
-  scale_fill_gradientn(name = "Location of WFH Jobs in Alternative Scenario",
-                       breaks = size_breaks <- seq(0, 60000, by = 20000),
-                       labels = paste(prettyNum(size_breaks, big.mark = ","), "Jobs"),
-                       colors=map_color2) +
-  theme_void()
-
-ggplot(census_alt) +
-  geom_sf(aes(fill = alt_wfh_emp), color = NA) +
-  scale_fill_gradientn(colors=map_color3) +
-  theme_void()
-
-ggplot(census_alt) +
-  geom_sf(aes(fill = alt_wfh_jobs), color = NA) +
-  scale_fill_gradientn(colors=map_color3) +
-  theme_void()
-
-ggplot(census) +
-  geom_sf(aes(fill = ratio_no_veh), size = 0.05, color = NA) +
-  scale_fill_gradientn(colors=map_color4) +
-  theme_void()
-
-ggplot(census) +
-  geom_sf(aes(fill = ratio_no_worker), size = 0.05, color = NA) +
-  scale_fill_gradientn(colors=map_color5) +
-  theme_void()
-
-ggplot(census) +
-  geom_sf(aes(fill = ratio_lt_10k), size = 0.05, color = NA) +
-  scale_fill_gradientn(colors=map_color7) +
-  theme_void()
-
-ggplot(census_alt) +
-  geom_sf(aes(fill = wfh_impact_ratio), size = 0.05, color = NA) +
-  scale_fill_gradientn(name = "WFH Impact Ratio",
-                       breaks = size_breaks <- seq(0, 1,  by = 0.2),
-                       labels = size_breaks,
-                       colors=map_color6) +
-  theme_void()
+lowinc_map <- chlor_map(census, "ratio_lt_10k", pal = map_color,
+                        title = "Ratio Households <$10k Income")
 
 
-emp_change <- ggplot(census_alt) +
-  geom_sf(aes(fill = change_commuting_emp), color = NA) +
-  scale_fill_viridis_c(name = "Change in Workers Commuting per Day",
-                       breaks = size_breaks <- seq(-1600, 0, by = 400),
-                       labels = paste(prettyNum(size_breaks, big.mark = ","), "workers")) +
-  theme_void()
 
+ggsave("graphics/dotplot.jpeg", overall, device = "jpeg")
+ggsave("graphics/correlation.jpeg", corr, device = "jpeg")
+ggsave("graphics/income_map.jpeg", income_map, device = "jpeg")
+ggsave("graphics/jobs_map.jpeg", jobs_map, device = "jpeg")
+ggsave("graphics/employees_map.jpeg", employees_map, device = "jpeg")
+ggsave("graphics/novehicles_map.jpeg", noveh_map, device = "jpeg")
+ggsave("graphics/noworkers_map.jpeg", noworker_map, device = "jpeg")
+ggsave("graphics/lowincome_map.jpeg", lowinc_map, device = "jpeg")
 
-job_change <- ggplot(census_alt) +
-  geom_sf(aes(fill = change_commuting_jobs), color = NA) +
-  scale_fill_viridis_c(name = "Change in Jobs Requiring Commuting per Day",
-                       breaks = size_breaks <- seq(-12500, 0, by = 2500),
-                       labels = paste(prettyNum(size_breaks, big.mark = ","), "jobs")) +
-  theme_void()
-
-ggsave("graphics/employee_commuting_change.jpeg", emp_change, device = "jpeg")
-ggsave("graphics/job_commuting_change.jpeg", job_change, device = "jpeg")
 
 
 ```
