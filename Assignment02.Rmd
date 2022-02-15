@@ -18,6 +18,7 @@ library(RColorBrewer)
 library(viridis) 
 library(GGally)
 library(vtable)
+library(extrafont)
 
 ```
 
@@ -27,7 +28,7 @@ library(vtable)
 sanjose_msa <- core_based_statistical_areas() %>% 
   filter(GEOID == "41940")
 
-view(load_variables(2019, "acs5"))
+# view(load_variables(2019, "acs5"))
 
 #specify ACS variables for inclusion
 vars <- c(med_income = "B06011_001",
@@ -144,26 +145,20 @@ hist_veh
 
 # Create Alternative Dataset
 
+The main simplifying assumption used in creating the alternative dataset is
+that all jobs within service sector are able to be performed remotely,
+and that people working in those positions will decrease their
+days spent in the office by 40% (i.e., the number of people working
+from home will increase by 40%). Additionally, the number of jobs
+in the service sector will decrease by 40%. These jobs are not
+being removed from the economy, but for the purposes of the subsequent
+transportation demand model, they will not be considered as jobs
+that require commuters.
+
 The main assumption here is that the industries that we have classified
 as "WFH" will experience a 40% decrease in work days commuting from the 
 baseline, i.e. from 5 days per week to 3 days per week.
 
-- generate assumption of % days work from home (e.g. 40%)
-- generate 40% wfh-able jobs and employees
-- generate: total workers - WFH - 40% * (WFH-able jobs + WFH-able employees)
-40% is an assumption
-- assume people WFH is not counted in the total jobs
-- assume that there is negligible overlap between people working in a tract and living 
-in that tract. (based on random sampling of LEHD data)
-
-
-o	Reduce number of service jobs (make note not actually reducing jobs, just commuting), and reduce number of people who don’t work from home and increase num of people who do work 
-
-things to do:
-- ACS variables on people who work from home and people who don't, existing dataset
-- alt dataset:
-  - Decrease people who don't work from home by 40% and add that value to people who do WFH
-  - decrease the amount of service jobs by 40%
 
 ```{r}
 census_alt <- census %>%
@@ -175,53 +170,13 @@ census_alt <- census %>%
          alt_wfh = total_wfhE + commuter_change)
 
 
-         # alt_wfh_emp = round(WFH_emp * (1-wfh_percent), digits = 0),
-         # alt_wfh_jobs = round(WFH_jobs * (1-wfh_percent), digits = 0),
-         # alt_total_jobs = round(total_jobs - wfh_percent * WFH_jobs, digits = 0),
-         # alt_total_emp = round(total_emp * (1 - total_wfhE/total_workerE) - wfh_percent 
-         #                       * WFH_emp, digits = 0),
-         # wfh_impact_ratio = round((WFH_jobs + WFH_emp) / (total_jobs + total_emp), digits = 2),
-         # change_commuting_emp = alt_total_emp - total_emp,
-         # change_commuting_jobs = alt_total_jobs - total_jobs)
-
-  
-
-
-
-
 ```
 
 # Generate Graphics
 
 ```{r}
 
-#create a function to help standardize maps. Can be updated as needed
-chlor_map <- function(df, variable, pal = NULL, title = NULL) {
-  ggplot(df) +
-    geom_sf(aes(fill = .data[[variable]]), color = NA) +
-  scale_fill_gradientn(name = title,
-                       colors = pal) +
-    theme_void()
-
-}
-
-chlor_map(census_alt, "commuter_change", pal = map_color, 
-          title = "Commuters\nTransitioned\nto WFH")
-
-
-chlor_map(census_alt, "alt_wfh", pal = map_color6,
-          title = "Primarily WFH in\nAlternative Scenario")
-
-
-chlor_map(census_alt, "jobs_change", pal = map_color7,
-          title = "Jobs Transitioned\nto WFH in\nAlternative Scenario")
-
-
-```
-
-
-```{r}
-#graphics generation
+#color palettes
 map_color<- brewer.pal(5,"BuPu")
 map_color2<-brewer.pal(5,"PRGn")
 map_color3<-brewer.pal(5,"YlOrRd")
@@ -229,6 +184,45 @@ map_color4<-brewer.pal(5,"Oranges")
 map_color5<-brewer.pal(5,"PuRd")
 map_color6<-brewer.pal(5,"Greens")
 map_color7<-brewer.pal(5,"Reds")
+
+#specify text elements to help standardize
+font <- "Trebuchet MS"
+text_size <- 12
+axis_title_size <- 14
+axis_text_size <- 12
+geom_text_size <- 4
+options(scipen = 999)
+
+
+
+#create a function to help standardize maps. Can be updated as needed
+chlor_map <- function(df, variable, pal = NULL, title = NULL) {
+  ggplot(df) +
+    geom_sf(aes(fill = .data[[variable]]), color = NA) +
+  scale_fill_gradientn(name = title,
+                       colors = pal) +
+    theme_void() +
+    theme(panel.grid.minor = element_blank(), 
+          text = element_text(family = font, size = text_size))
+
+}
+
+chlor_map(census_alt, "commuter_change", pal = map_color, 
+          title = "Commuters\nTransitioned\nto WFH")
+
+
+chlor_map(census_alt, "alt_wfh", pal = map_color,
+          title = "Primarily WFH in\nAlternative Scenario")
+
+
+chlor_map(census_alt, "jobs_change", pal = map_color,
+          title = "Jobs Transitioned\nto WFH in\nAlternative Scenario")
+
+
+```
+
+
+```{r}
 
 
 overall <- ggplot(census_alt, 
