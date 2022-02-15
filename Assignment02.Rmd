@@ -24,7 +24,7 @@ library(extrafont)
 
 # Load Variables
 
-```{r}
+```{r, message = F, echo = F, error = F}
 sanjose_msa <- core_based_statistical_areas() %>% 
   filter(GEOID == "41940")
 
@@ -226,11 +226,11 @@ chlor_map(census_alt, "jobs_change", pal = map_color,
 
 
 overall <- ggplot(census_alt, 
-       aes(x = WFH_emp/total_emp,#x = alt_wfh_emp/alt_total_emp,
+       aes(x = alt_wfh/total_workerE,#x = alt_wfh_emp/alt_total_emp,
            y = med_incomeE/1000,
            size = no_veh_hhE/total_hhsE)) +
   geom_point(alpha = 0.5) +
-  scale_size_continuous(name = "% of households\n with no vehicles") +
+  scale_size_continuous(name = "Proportion of households\nwith no vehicles") +
   scale_x_continuous(name = "Employees able to WFH / Total employees",
                      breaks = seq(0, 1, by = 0.1),
                      labels = paste(seq(0, 100, by = 10), "%", sep = "")) +
@@ -241,19 +241,17 @@ overall <- ggplot(census_alt,
 
 overall
   
-newdf<- census_alt[,c("med_incomeE","alt_wfh_emp","alt_wfh_jobs")]%>%st_set_geometry(NULL)
+newdf <- census_alt[,c("med_incomeE","alt_wfh","alt_service_jobs")] %>% 
+  st_set_geometry(NULL)
 
 ggcorr(newdf,palette = "RdBu",label=TRUE)
 
-ggplot(census) +
-  geom_sf(aes(fill = med_incomeE), size = 0.05, color = NA) +
-  scale_fill_gradientn(colors=map_color) +
-  theme_void()
+chlor_map(census, "med_incomeE", pal = map_color,
+          title = "Median Income")
 
-ggplot(census) +
-  geom_sf(aes(fill = total_jobs), color = NA) +
-  scale_fill_gradientn(colors=map_color) +
-  theme_void()
+chlor_map(census, "total_jobs", pal = map_color,
+          title = "Existing Total Jobs")
+
 
 ggplot(census) +
   geom_sf(aes(fill = total_emp), color = NA) +
