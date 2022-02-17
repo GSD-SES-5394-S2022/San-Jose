@@ -1,0 +1,58 @@
+---
+title: "Assignment04"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
+date: "2/17/2022"
+output: html_document
+---
+
+# Load Libraries
+
+```{r, message=F, echo=F, warning=F}
+library(sf)
+library(tigris)
+library(tidyverse)
+library(osmdata)
+
+
+
+
+
+
+```
+
+
+# Download OSM data
+
+```{r, message=F, warning=F}
+# Load the MSA boundaries
+boundary <- core_based_statistical_areas() %>% 
+  filter(GEOID == "41940")
+
+# Define a bounding box containing the MSA
+sanjose_bbox <- st_bbox(boundary)
+
+q <- opq(bbox = sanjose_bbox) %>% # create a query
+  add_osm_feature(key = 'highway') %>% # request only road data
+  osmdata_xml(file = 'existing/networks/streets.osm') # download osm file
+
+```
+
+
+# Convert OSM to PBF
+
+```{r, message=F, warning=F}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
