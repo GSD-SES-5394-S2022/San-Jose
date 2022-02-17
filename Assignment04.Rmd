@@ -38,14 +38,6 @@ q <- opq(bbox = sanjose_bbox) %>% # create a query
 ```
 
 
-# Convert OSM to PBF
-
-```{r, message=F, warning=F}
-
-
-
-```
-
 
 
 
