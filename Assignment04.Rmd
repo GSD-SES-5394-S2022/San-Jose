@@ -14,7 +14,7 @@ library(tidyverse)
 library(osmdata)
 library(here)
 library(tidytransit)
-options(java.parameters = "-Xmx3G")
+options(java.parameters = "-Xmx5G")
 library(r5r)
 library(lubridate)
 
@@ -55,6 +55,7 @@ st_write(centroids, here("zones", "centroids.geojson"))
 
 # Load SJ GTFS Data
 
+
 ```{r}
 current_gtfs <- here("existing",
                      "networks",
@@ -94,7 +95,7 @@ transit_skim_existing <- travel_time_matrix(existing_core,
                          origins = centroids,
                          destinations = centroids,
                          mode = "TRANSIT",
-                         departure_datetime = ymd_hm("2020-02-10 08:30"),
+                         departure_datetime = ymd_hm("2022-02-14 08:30"),
                          breakdown = TRUE)
 
 
@@ -117,15 +118,33 @@ transit_skim_existing <- transit_skim_existing %>%
 walk_skim_existing <- walk_skim_existing %>%
   rename(walk_time = travel_time)
 
-all_skims_existing <- full_join(transit_skim_existing, car_skim_existing) %>%
-  full_join(walk_skim_existing)
+bike_skim_existing <- bike_skim_existing %>%
+  rename(bike_time = travel_time)
 
-write_csv(all_skims_existing, here("existing/data/skims.csv"))
 
+walk_bike_skim_existing <- full_join(bike_skim_existing, walk_skim_existing)
 ```
 
 
+# Save Existing Skims
 
+```{r}
+write_csv(walk_bike_skim_existing, here("existing/data/walk_bike_skims.csv"))
+write_csv(transit_skim_existing, here("existing/data/transit_skim.csv"))
+write_csv(car_skim_existing, here("existing/data/car_skim.csv"))
+
+
+```
+
+# Save Alternative Skims (no change to Existing)
+
+```{r}
+write_csv(walk_bike_skim_existing, here("alternative/data/walk_bike_skims.csv"))
+write_csv(transit_skim_existing, here("alternative/data/transit_skim.csv"))
+write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
+
+
+```
 
 
 
