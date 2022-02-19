@@ -16,6 +16,7 @@ library(here)
 library(tidytransit)
 options(java.parameters = "-Xmx3G")
 library(r5r)
+library(lubridate)
 
 
 ```
@@ -81,6 +82,25 @@ car_skim_existing <- travel_time_matrix(existing_core,
                      destinations = centroids,
                      mode = "CAR")
 
+walk_skim_existing <- travel_time_matrix(existing_core, 
+                      origins = centroids,
+                      destinations = centroids,
+                      mode = "WALK")
+
+bike_skim_existing <- travel_time_matrix(existing_core, 
+                      origins = centroids,
+                      destinations = centroids,
+                      mode = "BICYCLE")
+
+transit_skim_existing <- travel_time_matrix(existing_core, 
+                         origins = centroids,
+                         destinations = centroids,
+                         mode = "TRANSIT",
+                         departure_datetime = ymd_hm("2021-12-04 17:00"),
+                         breakdown = TRUE)
+
+
+stop_r5()
 
 ```
 
