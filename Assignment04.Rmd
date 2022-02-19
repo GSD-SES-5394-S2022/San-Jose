@@ -71,8 +71,6 @@ existing_core <- here("existing",
                       "networks") %>%
   setup_r5(verbose = FALSE)
 
-
-
 ```
 
 ```{r, message=F, warning=F, results='hide'}
@@ -104,8 +102,27 @@ stop_r5()
 
 ```
 
+# Combine Files
 
+```{r, message=F, warning=F, results='hide'}
+transit_skim_existing <- transit_skim_existing %>%
+  filter(n_rides > 0)
 
+car_skim_existing <- car_skim_existing %>%
+  rename(car_time = travel_time) 
+
+transit_skim_existing <- transit_skim_existing %>%
+  rename(transit_time = travel_time) 
+
+walk_skim_existing <- walk_skim_existing %>%
+  rename(walk_time = travel_time)
+
+all_skims_existing <- full_join(transit_skim_existing, car_skim_existing) %>%
+  full_join(walk_skim_existing)
+
+write_csv(all_skims_existing, here("existing/data/skims.csv"))
+
+```
 
 
 
