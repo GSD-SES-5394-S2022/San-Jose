@@ -13,11 +13,9 @@ library(tigris)
 library(tidyverse)
 library(osmdata)
 library(here)
-
-
-
-
-
+library(tidytransit)
+options(java.parameters = "-Xmx3G")
+library(r5r)
 
 
 ```
@@ -54,13 +52,61 @@ st_write(centroids, here("zones", "centroids.geojson"))
 
 ```
 
-# 
+# Load SJ GTFS Data
 
 ```{r}
+current_gtfs <- here("existing",
+                     "networks",
+                     "gtfs_vta.zip") %>%
+  read_gtfs()
+
+
+```
+
+# Generate skims
+
+```{r, message=F, warning=F, results='hide'}
+existing_core <- here("existing",
+                      "networks") %>%
+  setup_r5(verbose = FALSE)
 
 
 
 ```
+
+```{r, message=F, warning=F, results='hide'}
+
+car_skim_existing <- travel_time_matrix(existing_core, 
+                     origins = centroids,
+                     destinations = centroids,
+                     mode = "CAR")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
