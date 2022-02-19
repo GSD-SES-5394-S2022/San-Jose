@@ -55,6 +55,10 @@ st_write(centroids, here("zones", "centroids.geojson"))
 
 # Load SJ GTFS Data
 
+<<<<<<< HEAD
+=======
+The GTFS data is from February 2020, to get the service frequency of pre-COVID times.
+>>>>>>> 735e1f21a4df01207a7f7be7b8b0cabdfe8e3bd7
 
 ```{r}
 current_gtfs <- here("existing",
@@ -121,8 +125,10 @@ walk_skim_existing <- walk_skim_existing %>%
 bike_skim_existing <- bike_skim_existing %>%
   rename(bike_time = travel_time)
 
+write_csv(car_skim_existing, here("existing/temp/carskims.csv"))
+write_csv(walk_skim_existing, here("existing/temp/walkskims.csv"))
+write_csv(bike_skim_existing, here("existing/temp/bikeskims.csv"))
 
-walk_bike_skim_existing <- full_join(bike_skim_existing, walk_skim_existing)
 ```
 
 
