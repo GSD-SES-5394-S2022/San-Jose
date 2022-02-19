@@ -55,6 +55,8 @@ st_write(centroids, here("zones", "centroids.geojson"))
 
 # Load SJ GTFS Data
 
+The GTFS data is from February 2020, to get the service frequency of pre-COVID times.
+
 ```{r}
 current_gtfs <- here("existing",
                      "networks",
@@ -94,7 +96,7 @@ transit_skim_existing <- travel_time_matrix(existing_core,
                          origins = centroids,
                          destinations = centroids,
                          mode = "TRANSIT",
-                         departure_datetime = ymd_hm("2020-02-10 08:30"),
+                         departure_datetime = ymd_hm("2022-02-14 08:30"),
                          breakdown = TRUE)
 
 
