@@ -12,6 +12,8 @@ library(sf)
 library(tigris)
 library(tidyverse)
 library(osmdata)
+library(here)
+
 
 
 
@@ -37,12 +39,28 @@ q <- opq(bbox = sanjose_bbox) %>% # create a query
 
 ```
 
+# Zone Centroids
+
+```{r, message=F, error=F, warning=F, results='hide'}
+
+centroids <- here("zones",
+                  "zones_sanjose2.geojson") %>%
+  st_read() %>%
+  st_centroid() %>%
+  st_transform("WGS84") %>%
+  rename(id = GEOID)
+
+st_write(centroids, here("zones", "centroids.geojson"))
+
+```
+
+# 
+
+```{r}
 
 
 
-
-
-
+```
 
 
 
