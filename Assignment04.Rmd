@@ -117,10 +117,17 @@ transit_skim_existing <- transit_skim_existing %>%
 walk_skim_existing <- walk_skim_existing %>%
   rename(walk_time = travel_time)
 
-all_skims_existing <- full_join(transit_skim_existing, car_skim_existing) %>%
+bike_skim_existing <- bike_skim_existing %>%
+  rename(bike_time = travel_time)
+
+all_skims_existing <- full_join(bike_skim_existing, car_skim_existing) %>%
   full_join(walk_skim_existing)
 
 write_csv(all_skims_existing, here("existing/data/skims.csv"))
+
+write_csv(car_skim_existing, here("existing/temp/carskims.csv"))
+write_csv(walk_skim_existing, here("existing/temp/walkskims.csv"))
+write_csv(bike_skim_existing, here("existing/temp/bikeskims.csv"))
 
 ```
 
