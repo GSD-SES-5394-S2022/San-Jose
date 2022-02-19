@@ -23,7 +23,7 @@ library(osmdata)
 
 # Download OSM data
 
-```{r, message=F, warning=F}
+```{r, message=F, warning=F, results='hide'}
 # Load the MSA boundaries
 boundary <- core_based_statistical_areas() %>% 
   filter(GEOID == "41940")
