@@ -87,6 +87,7 @@ census <- get_acs(geography = "tract",
                   geometry = T) %>%
   st_filter(sj_centroids)
 
+
   
 #download employment data
 lehd_blocks_jobs <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/wac/ca_wac_S000_JT00_2019.csv.gz", 
@@ -292,9 +293,10 @@ ggsave("graphics/lowincome_map.jpeg", lowinc_map, device = "jpeg")
 ```{r}
 existing <- write_csv(census, "existing/data/existing_sanjose.csv", append = F)
 
-zones_sanjose <- write_sf(tracts, "zones/zones_sanjose2.geojson")
+zones_sanjose <- write_sf(tracts, "zones/zones_sanjose.geojson")
 
 alternative <- write_csv(census_alt, "alternative/data/alternative_sanjose.csv", append = F)
+
 
 ```
 

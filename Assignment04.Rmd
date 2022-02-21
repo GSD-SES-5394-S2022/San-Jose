@@ -47,7 +47,7 @@ q <- opq(bbox = sanjose_bbox) %>% # create a query
 ```{r, message=F, error=F, warning=F, results='hide'}
 
 centroids <- here("zones",
-                  "zones_sanjose2.geojson") %>%
+                  "zones_sanjose.geojson") %>%
   st_read() %>%
   st_centroid() %>%
   st_transform("WGS84") %>%
@@ -56,7 +56,7 @@ centroids <- here("zones",
 st_write(centroids, here("zones", "centroids.geojson"))
 
 zones <- here("zones",
-                  "zones_sanjose2.geojson") %>%
+                  "zones_sanjose.geojson") %>%
   st_read() %>%
   st_transform("WGS84")
 
