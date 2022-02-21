@@ -137,7 +137,8 @@ bike_skim_existing <- bike_skim_existing %>%
 # Save Existing Skims
 
 ```{r}
-write_csv(walk_bike_skim_existing, here("existing/data/walk_bike_skims.csv"))
+write_csv(bike_skim_existing, here("existing/data/bike_skim.csv"))
+write_csv(walk_skim_existing, here("existing/data/walk_skim.csv"))
 write_csv(transit_skim_existing, here("existing/data/transit_skim.csv"))
 write_csv(car_skim_existing, here("existing/data/car_skim.csv"))
 
@@ -147,7 +148,8 @@ write_csv(car_skim_existing, here("existing/data/car_skim.csv"))
 # Save Alternative Skims (no change to Existing)
 
 ```{r}
-write_csv(walk_bike_skim_existing, here("alternative/data/walk_bike_skims.csv"))
+write_csv(bike_skim_existing, here("alternative/data/bike_skim.csv"))
+write_csv(walk_skim_existing, here("alternative/data/walk_skim.csv"))
 write_csv(transit_skim_existing, here("alternative/data/transit_skim.csv"))
 write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
 
@@ -159,16 +161,17 @@ write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
 
 ```{r, message=F, warning=F}
 
-walk_bike_skim_existing <- read_csv(here("existing/data/walk_bike_skims.csv"))
+bike_skim_existing <- read_csv(here("existing/data/bike_skim.csv"))
+walk_skim_existing <- read_csv(here("existing/data/walk_skim.csv"))
 transit_skim_existing <- read_csv(here("existing/data/transit_skim.csv"))
 car_skim_existing <- read_csv(here("existing/data/car_skim.csv"))
 
 ```
 
 ```{r}
-tt_wide <- car_skim_existing %>%
+tt_wide <- walk_skim_existing %>%
   pivot_wider(names_from = fromId, 
-              names_prefix = "from", values_from = car_time) %>%
+              names_prefix = "from", values_from = walk_time) %>%
   rename(id = toId) %>% 
   merge(sj_tracts) %>%
   replace(is.na(.), 999) %>%
