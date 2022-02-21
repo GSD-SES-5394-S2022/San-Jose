@@ -19,6 +19,7 @@ library(r5r)
 library(lubridate)
 library(leaflet)
 library(ggthemes)
+library(ggspatial)
 library(RColorBrewer)
 
 
@@ -177,8 +178,16 @@ just for demonstration purposes.
 
 
 ```{r}
+#palettes
+car_map_palette <- brewer.pal(5, "YlOrBr")
+transit_map_palette <- brewer.pal(5, "YlGn")
+bike_map_palette <- brewer.pal(5, "BuPu")
+walk_map_palette <- brewer.pal(5, "PuBu")
 
-#driving
+
+
+
+#car
 car_mat_exist <- car_skim_existing %>%
   unique() %>%
   select(fromId, toId, car_time) %>%
@@ -194,12 +203,14 @@ existing_maxjob_car <- car_mat_exist %>%
 zones <- zones %>%
   inner_join(existing_maxjob_car)
 
-map_palette <- brewer.pal(5, "YlOrBr")
-
-ggplot(zones) +
+car_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = car_existing),
           color = NA) +
-  scale_fill_gradientn(colours = map_palette) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = car_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Car") +
+  annotation_scale() +
   theme_void()
 
 #transit
@@ -218,10 +229,14 @@ existing_maxjob_transit <- transit_mat_exist %>%
 zones <- zones %>%
   inner_join(existing_maxjob_transit)
 
-ggplot(zones) +
+transit_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = transit_existing),
           color = NA) +
-  scale_fill_gradientn(colours = map_palette) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = transit_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Transit") +
+  annotation_scale() +
   theme_void()
 
 #bike
@@ -240,10 +255,14 @@ existing_maxjob_bike <- bike_mat_exist %>%
 zones <- zones %>%
   inner_join(existing_maxjob_bike)
 
-ggplot(zones) +
+bike_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = bike_existing),
           color = NA) +
-  scale_fill_gradientn(colours = map_palette) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = bike_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Bike") +
+  annotation_scale() +
   theme_void()
 
 
@@ -263,11 +282,26 @@ existing_maxjob_walk <- walk_mat_exist %>%
 zones <- zones %>%
   inner_join(existing_maxjob_walk)
 
-ggplot(zones) +
+walk_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = walk_existing),
           color = NA) +
-  scale_fill_gradientn(colours = map_palette) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = walk_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Foot") +
+  annotation_scale() +
   theme_void()
+
+car_travel_map
+transit_travel_map
+bike_travel_map
+walk_travel_map
+
+ggsave("graphics/car_travel_map.jpeg", car_travel_map, device = "jpeg")
+ggsave("graphics/transit_travel_map.jpeg", transit_travel_map, device = "jpeg")
+ggsave("graphics/bike_travel_map.jpeg", bike_travel_map, device = "jpeg")
+ggsave("graphics/walk_travel_map.jpeg", walk_travel_map, device = "jpeg")
+
 
 
 ```
