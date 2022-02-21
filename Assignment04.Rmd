@@ -124,16 +124,20 @@ transit_skim_existing <- transit_skim_existing %>%
   filter(n_rides > 0)
 
 car_skim_existing <- car_skim_existing %>%
-  rename(car_time = travel_time) 
+  rename(car_time = travel_time) %>%
+  unique()
 
 transit_skim_existing <- transit_skim_existing %>%
-  rename(transit_time = travel_time) 
+  rename(transit_time = travel_time) %>%
+  unique()
 
 walk_skim_existing <- walk_skim_existing %>%
-  rename(walk_time = travel_time)
+  rename(walk_time = travel_time) %>%
+  unique()
 
 bike_skim_existing <- bike_skim_existing %>%
-  rename(bike_time = travel_time)
+  rename(bike_time = travel_time) %>%
+  unique()
 
 ```
 
@@ -143,7 +147,7 @@ bike_skim_existing <- bike_skim_existing %>%
 ```{r}
 write_csv(bike_skim_existing, here("existing/data/bike_skim.csv"))
 write_csv(walk_skim_existing, here("existing/data/walk_skim.csv"))
-write_csv(transit_skim_existing, here("existing/data/transit_skim.csv"))
+write_csv(transit_skim_existing, here("existing/data/transit_skim2.csv"))
 write_csv(car_skim_existing, here("existing/data/car_skim.csv"))
 
 
@@ -167,7 +171,7 @@ write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
 
 bike_skim_existing <- read_csv(here("existing/data/bike_skim.csv"))
 walk_skim_existing <- read_csv(here("existing/data/walk_skim.csv"))
-transit_skim_existing <- read_csv(here("existing/data/transit_skim.csv"))
+transit_skim_existing <- read_csv(here("existing/data/transit_skim2.csv"))
 car_skim_existing <- read_csv(here("existing/data/car_skim.csv"))
 
 ```
