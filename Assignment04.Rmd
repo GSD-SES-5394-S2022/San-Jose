@@ -51,14 +51,20 @@ centroids <- here("zones",
 
 st_write(centroids, here("zones", "centroids.geojson"))
 
+sj_tracts <- here("zones",
+                  "zones_sanjose2.geojson") %>%
+  st_read() %>%
+  st_transform("WGS84")
+
+
+ggplot(sj_tracts) +
+  geom_sf() +
+  geom_sf(data = centroids)
+
 ```
 
 # Load SJ GTFS Data
 
-<<<<<<< HEAD
-=======
-The GTFS data is from February 2020, to get the service frequency of pre-COVID times.
->>>>>>> 735e1f21a4df01207a7f7be7b8b0cabdfe8e3bd7
 
 ```{r}
 current_gtfs <- here("existing",
@@ -125,10 +131,6 @@ walk_skim_existing <- walk_skim_existing %>%
 bike_skim_existing <- bike_skim_existing %>%
   rename(bike_time = travel_time)
 
-write_csv(car_skim_existing, here("existing/temp/carskims.csv"))
-write_csv(walk_skim_existing, here("existing/temp/walkskims.csv"))
-write_csv(bike_skim_existing, here("existing/temp/bikeskims.csv"))
-
 ```
 
 
@@ -153,7 +155,41 @@ write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
 ```
 
 
+# Create Isochrones
 
+```{r, message=F, warning=F}
+
+walk_bike_skim_existing <- read_csv(here("existing/data/walk_bike_skims.csv"))
+transit_skim_existing <- read_csv(here("existing/data/transit_skim.csv"))
+car_skim_existing <- read_csv(here("existing/data/car_skim.csv"))
+
+```
+
+```{r}
+tt_wide <- car_skim_existing %>%
+  pivot_wider(names_from = fromId, 
+              names_prefix = "from", values_from = car_time) %>%
+  rename(id = toId) %>% 
+  merge(sj_tracts) %>%
+  replace(is.na(.), 999) %>%
+  rowwise() %>%
+  mutate(from_any = min(c_across(starts_with("from")), na.rm = TRUE))
+
+
+st_geometry(tt_wide) <- "geometry"
+
+ggplot() +
+  geom_sf(data = tt_wide, 
+          aes(fill = from_any), 
+          color = NA) +
+  geom_sf(alpha = 0.5) +
+  scale_fill_gradient2(low = "green", mid = "yellow", high = "red", 
+                       midpoint = 30,
+        name = "Transit Travel\ntime to the\nnearest school\n(minutes)") +
+  coord_sf(crs = "WGS84") 
+
+
+```
 
 
 
