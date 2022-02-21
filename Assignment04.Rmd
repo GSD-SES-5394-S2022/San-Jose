@@ -57,8 +57,7 @@ st_write(centroids, here("zones", "centroids.geojson"))
 
 zones <- here("zones",
                   "zones_sanjose.geojson") %>%
-  st_read() %>%
-  st_transform("WGS84")
+  st_read() 
 
 
 ggplot(zones) +
@@ -114,6 +113,7 @@ transit_skim_existing <- travel_time_matrix(existing_core,
 
 
 stop_r5()
+
 
 ```
 
@@ -231,7 +231,7 @@ existing_maxjob_transit <- transit_mat_exist %>%
   rename(transit_existing = `06085505006`) 
 
 zones <- zones %>%
-  inner_join(existing_maxjob_transit)
+  left_join(existing_maxjob_transit)
 
 transit_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = transit_existing),
@@ -257,7 +257,7 @@ existing_maxjob_bike <- bike_mat_exist %>%
   rename(bike_existing = `06085505006`) 
 
 zones <- zones %>%
-  inner_join(existing_maxjob_bike)
+  left_join(existing_maxjob_bike)
 
 bike_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = bike_existing),
@@ -284,7 +284,7 @@ existing_maxjob_walk <- walk_mat_exist %>%
   rename(walk_existing = `06085505006`) 
 
 zones <- zones %>%
-  inner_join(existing_maxjob_walk)
+  left_join(existing_maxjob_walk)
 
 walk_travel_map <- ggplot(zones) +
   geom_sf(aes(fill = walk_existing),
