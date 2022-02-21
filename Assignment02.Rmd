@@ -65,13 +65,6 @@ vars <- c(med_income = "B06011_001",
           total_worker = 'B08301_001',
           total_wfh = 'B08301_021') 
 
-#save ACS variables
-census <- get_acs(geography = "tract",
-                  state = "CA",
-                  variables = vars,
-                  output = "wide",
-                  geometry = T) %>%
-  st_filter(sanjose_msa)
 
 ca_tracts <- get_acs(geography = "tract",
                   state = "CA",
@@ -85,6 +78,15 @@ sj_centroids <- st_centroid(ca_tracts) %>%
 
 tracts <- ca_tracts %>%
   st_filter(sj_centroids)
+
+#save ACS variables
+census <- get_acs(geography = "tract",
+                  state = "CA",
+                  variables = vars,
+                  output = "wide",
+                  geometry = T) %>%
+  st_filter(sj_centroids)
+
   
 #download employment data
 lehd_blocks_jobs <- read_csv("https://lehd.ces.census.gov/data/lodes/LODES7/ca/wac/ca_wac_S000_JT00_2019.csv.gz", 
