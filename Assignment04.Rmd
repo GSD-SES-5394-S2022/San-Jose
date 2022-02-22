@@ -12,6 +12,7 @@ library(sf)
 library(tigris)
 library(tidyverse)
 library(osmdata)
+library(osmextract)
 library(here)
 library(tidytransit)
 options(java.parameters = "-Xmx5G")
@@ -77,6 +78,32 @@ current_gtfs <- here("existing",
 
 
 ```
+
+# Create Street Network
+
+```{r}
+SJMSA_file <- oe_match("San Jose")
+
+SJ_streets <- oe_read(SJMSA_file$url,
+                      provider = "openstreetmap_fr",
+                      download_directory = here("existing",
+                                                "networks"),
+                      layer = "lines",
+                      quiet = T) %>%
+  filter(!is.na(highway))
+
+boundary <- boundary %>%
+  st_transform(crs = st_crs(SJ_streets))
+
+SJ_streets <- SJ_streets[boundary,]
+
+ggplot(SJ_streets %>% filter(highway %in% c("primary", "secondary", "tertiary"))) +
+  geom_sf()
+
+
+```
+
+
 
 # Generate skims
 
@@ -185,6 +212,7 @@ just for demonstration purposes.
 #palettes
 car_map_palette <- brewer.pal(5, "YlOrBr")
 transit_map_palette <- brewer.pal(5, "YlGn")
+transit_rides_map_palette <- c("lightgreen", "gold", "salmon")
 bike_map_palette <- brewer.pal(5, "BuPu")
 walk_map_palette <- brewer.pal(5, "PuBu")
 
@@ -215,7 +243,8 @@ car_travel_map <- ggplot(zones) +
   scale_fill_gradientn(colours = car_map_palette, 
                        name = "Travel Time\nto Max Job Tract\nby Car") +
   annotation_scale() +
-  theme_void()
+  theme_void() +
+  theme(text = element_text(size = 14))
 
 #transit
 transit_mat_exist <- transit_skim_existing %>%
@@ -241,7 +270,39 @@ transit_travel_map <- ggplot(zones) +
   scale_fill_gradientn(colours = transit_map_palette, 
                        name = "Travel Time\nto Max Job Tract\nby Transit") +
   annotation_scale() +
-  theme_void()
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+##multiple-seat rides
+transit_mat_rides_exist <- transit_skim_existing %>%
+  select(fromId, toId, n_rides) %>%
+  pivot_wider(names_from = toId,
+              values_from = n_rides) %>%
+  column_to_rownames('fromId')
+
+existing_maxjob_rides_transit <- transit_mat_rides_exist %>%
+  rownames_to_column("GEOID") %>%
+  select(GEOID, `06085505006`) %>%
+  rename(transit_rides_existing = `06085505006`)
+
+zones <- zones %>%
+  left_join(existing_maxjob_rides_transit)
+
+transit_rides_map <- ggplot(zones) +
+  geom_sf(aes(fill = as.character(transit_rides_existing)), 
+          color = NA) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_manual(values = transit_rides_map_palette, 
+                    na.value = alpha("grey69", .7), 
+                    name = "Number of Rides\nfor Trip",
+                    labels = c("One-seat ride", "Two-seat ride", 
+                               "Three-seat ride", "Longer than two hours")) +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+
 
 #bike
 bike_mat_exist <- bike_skim_existing %>%
@@ -267,7 +328,8 @@ bike_travel_map <- ggplot(zones) +
   scale_fill_gradientn(colours = bike_map_palette, 
                        name = "Travel Time\nto Max Job Tract\nby Bike") +
   annotation_scale() +
-  theme_void()
+  theme_void() +
+  theme(text = element_text(size = 14))
 
 
 #walk
@@ -294,15 +356,18 @@ walk_travel_map <- ggplot(zones) +
   scale_fill_gradientn(colours = walk_map_palette, 
                        name = "Travel Time\nto Max Job Tract\nby Foot") +
   annotation_scale() +
-  theme_void()
+  theme_void() +
+  theme(text = element_text(size = 14))
 
 car_travel_map
 transit_travel_map
 bike_travel_map
 walk_travel_map
+transit_rides_map
 
 ggsave("graphics/car_travel_map.jpeg", car_travel_map, device = "jpeg")
 ggsave("graphics/transit_travel_map.jpeg", transit_travel_map, device = "jpeg")
+ggsave("graphics/transit_rides_map.jpeg", transit_rides_map, device = "jpeg")
 ggsave("graphics/bike_travel_map.jpeg", bike_travel_map, device = "jpeg")
 ggsave("graphics/walk_travel_map.jpeg", walk_travel_map, device = "jpeg")
 
