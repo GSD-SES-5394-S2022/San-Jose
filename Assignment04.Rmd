@@ -97,9 +97,21 @@ boundary <- boundary %>%
 
 SJ_streets <- SJ_streets[boundary,]
 
-ggplot(SJ_streets %>% filter(highway %in% c("primary", "secondary", "tertiary"))) +
-  geom_sf()
+street_network <- ggplot(SJ_streets %>% 
+                           filter(highway %in% c("primary", "secondary", "tertiary"))) +
+  geom_sf(aes(color = highway)) +
+  scale_color_manual(values = transit_rides_map_palette,
+                     name = "Road Type") +
+  theme_void() +
+  theme(text = element_text(size = 14))
 
+ggsave("graphics/street_network.jpeg", street_network, device = "jpeg")
+```
+
+```{r}
+vta_stops <- read_csv("existing/networks/shapes/stops.txt") %>%
+  st_as_sf(coords = c("stop_lon", "stop_lat")) %>%
+  st_set_crs("WGS84")
 
 ```
 
@@ -236,6 +248,8 @@ zones <- zones %>%
   inner_join(existing_maxjob_car)
 
 car_travel_map <- ggplot(zones) +
+  # geom_sf(data = SJ_streets %>% filter(highway %in% c("primary", "secondary", "tertiary")),
+  #         color = "grey69") +
   geom_sf(aes(fill = car_existing),
           color = NA) +
   geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
@@ -302,6 +316,33 @@ transit_rides_map <- ggplot(zones) +
   theme_void() +
   theme(text = element_text(size = 14))
 
+###with transit stops, zoomed in
+
+#set bounds to zoom in on transit
+right_side <- st_bbox(vta_stops)$xmax
+left_side <- st_bbox(vta_stops)$xmin
+top_side <- st_bbox(vta_stops)$ymax
+bottom_side <- st_bbox(vta_stops)$ymin
+
+
+vta_stops_map <- ggplot(zones) +
+  geom_sf(aes(fill = as.character(transit_rides_existing)), 
+          color = NA, alpha = .7) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA, alpha = .7) +
+  geom_sf(data = vta_stops, size = .4) +
+  scale_fill_manual(values = transit_rides_map_palette, 
+                    na.value = alpha("grey69", .7), 
+                    name = "Number of Rides\nfor Trip",
+                    labels = c("One-seat ride", "Two-seat ride", 
+                               "Three-seat ride", "Longer than two hours")) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side), expand = F) +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+
 
 
 #bike
@@ -364,13 +405,14 @@ transit_travel_map
 bike_travel_map
 walk_travel_map
 transit_rides_map
+vta_stops_map
 
 ggsave("graphics/car_travel_map.jpeg", car_travel_map, device = "jpeg")
 ggsave("graphics/transit_travel_map.jpeg", transit_travel_map, device = "jpeg")
 ggsave("graphics/transit_rides_map.jpeg", transit_rides_map, device = "jpeg")
 ggsave("graphics/bike_travel_map.jpeg", bike_travel_map, device = "jpeg")
 ggsave("graphics/walk_travel_map.jpeg", walk_travel_map, device = "jpeg")
-
+ggsave("graphics/vta_stops_map.jpeg", vta_stops_map, device = "jpeg")
 
 
 ```
