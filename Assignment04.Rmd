@@ -12,11 +12,16 @@ library(sf)
 library(tigris)
 library(tidyverse)
 library(osmdata)
+library(osmextract)
 library(here)
 library(tidytransit)
-options(java.parameters = "-Xmx3G")
+options(java.parameters = "-Xmx5G")
 library(r5r)
 library(lubridate)
+library(leaflet)
+library(ggthemes)
+library(ggspatial)
+library(RColorBrewer)
 
 
 ```
@@ -43,7 +48,7 @@ q <- opq(bbox = sanjose_bbox) %>% # create a query
 ```{r, message=F, error=F, warning=F, results='hide'}
 
 centroids <- here("zones",
-                  "zones_sanjose2.geojson") %>%
+                  "zones_sanjose.geojson") %>%
   st_read() %>%
   st_centroid() %>%
   st_transform("WGS84") %>%
@@ -51,11 +56,19 @@ centroids <- here("zones",
 
 st_write(centroids, here("zones", "centroids.geojson"))
 
+zones <- here("zones",
+                  "zones_sanjose.geojson") %>%
+  st_read() 
+
+
+ggplot(zones) +
+  geom_sf() +
+  geom_sf(data = centroids)
+
 ```
 
 # Load SJ GTFS Data
 
-The GTFS data is from February 2020, to get the service frequency of pre-COVID times.
 
 ```{r}
 current_gtfs <- here("existing",
@@ -65,6 +78,44 @@ current_gtfs <- here("existing",
 
 
 ```
+
+# Create Street Network
+
+```{r}
+SJMSA_file <- oe_match("San Jose")
+
+SJ_streets <- oe_read(SJMSA_file$url,
+                      provider = "openstreetmap_fr",
+                      download_directory = here("existing",
+                                                "networks"),
+                      layer = "lines",
+                      quiet = T) %>%
+  filter(!is.na(highway))
+
+boundary <- boundary %>%
+  st_transform(crs = st_crs(SJ_streets))
+
+SJ_streets <- SJ_streets[boundary,]
+
+street_network <- ggplot(SJ_streets %>% 
+                           filter(highway %in% c("primary", "secondary", "tertiary"))) +
+  geom_sf(aes(color = highway)) +
+  scale_color_manual(values = transit_rides_map_palette,
+                     name = "Road Type") +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+ggsave("graphics/street_network.jpeg", street_network, device = "jpeg")
+```
+
+```{r}
+vta_stops <- read_csv("existing/networks/shapes/stops.txt") %>%
+  st_as_sf(coords = c("stop_lon", "stop_lat")) %>%
+  st_set_crs("WGS84")
+
+```
+
+
 
 # Generate skims
 
@@ -102,6 +153,7 @@ transit_skim_existing <- travel_time_matrix(existing_core,
 
 stop_r5()
 
+
 ```
 
 # Combine Files
@@ -111,33 +163,259 @@ transit_skim_existing <- transit_skim_existing %>%
   filter(n_rides > 0)
 
 car_skim_existing <- car_skim_existing %>%
-  rename(car_time = travel_time) 
+  rename(car_time = travel_time) %>%
+  unique()
 
 transit_skim_existing <- transit_skim_existing %>%
-  rename(transit_time = travel_time) 
+  rename(transit_time = travel_time) %>%
+  unique()
 
 walk_skim_existing <- walk_skim_existing %>%
-  rename(walk_time = travel_time)
+  rename(walk_time = travel_time) %>%
+  unique()
 
 bike_skim_existing <- bike_skim_existing %>%
-  rename(bike_time = travel_time)
-
-all_skims_existing <- full_join(bike_skim_existing, car_skim_existing) %>%
-  full_join(walk_skim_existing)
-
-write_csv(all_skims_existing, here("existing/data/skims.csv"))
-
-write_csv(car_skim_existing, here("existing/temp/carskims.csv"))
-write_csv(walk_skim_existing, here("existing/temp/walkskims.csv"))
-write_csv(bike_skim_existing, here("existing/temp/bikeskims.csv"))
+  rename(bike_time = travel_time) %>%
+  unique()
 
 ```
 
 
+# Save Existing Skims
+
+```{r}
+write_csv(bike_skim_existing, here("existing/data/bike_skim.csv"))
+write_csv(walk_skim_existing, here("existing/data/walk_skim.csv"))
+write_csv(transit_skim_existing, here("existing/data/transit_skim2.csv"))
+write_csv(car_skim_existing, here("existing/data/car_skim.csv"))
+
+
+```
+
+# Save Alternative Skims (no change to Existing)
+
+```{r}
+write_csv(bike_skim_existing, here("alternative/data/bike_skim.csv"))
+write_csv(walk_skim_existing, here("alternative/data/walk_skim.csv"))
+write_csv(transit_skim_existing, here("alternative/data/transit_skim.csv"))
+write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
+
+
+```
+
+
+# Create Isochrones
+
+```{r, message=F, warning=F}
+
+bike_skim_existing <- read_csv(here("existing/data/bike_skim.csv"))
+walk_skim_existing <- read_csv(here("existing/data/walk_skim.csv"))
+transit_skim_existing <- read_csv(here("existing/data/transit_skim2.csv"))
+car_skim_existing <- read_csv(here("existing/data/car_skim.csv"))
+
+```
+
+The census tract with GEOID 6001441503 has the largest amount of jobs in 
+the existing condition. So travel times will be calculated to this tract,
+just for demonstration purposes.
+
+
+```{r}
+#palettes
+car_map_palette <- brewer.pal(5, "YlOrBr")
+transit_map_palette <- brewer.pal(5, "YlGn")
+transit_rides_map_palette <- c("lightgreen", "gold", "salmon")
+bike_map_palette <- brewer.pal(5, "BuPu")
+walk_map_palette <- brewer.pal(5, "PuBu")
 
 
 
 
+#car
+car_mat_exist <- car_skim_existing %>%
+  unique() %>%
+  select(fromId, toId, car_time) %>%
+  pivot_wider(names_from = toId,
+              values_from = car_time) %>%
+  column_to_rownames('fromId')
+
+existing_maxjob_car <- car_mat_exist %>%
+  rownames_to_column('GEOID') %>%
+  select(GEOID, `06085505006`) %>%
+  rename(car_existing = `06085505006`) 
+
+zones <- zones %>%
+  inner_join(existing_maxjob_car)
+
+car_travel_map <- ggplot(zones) +
+  # geom_sf(data = SJ_streets %>% filter(highway %in% c("primary", "secondary", "tertiary")),
+  #         color = "grey69") +
+  geom_sf(aes(fill = car_existing),
+          color = NA) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = car_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Car") +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+#transit
+transit_mat_exist <- transit_skim_existing %>%
+  unique() %>%
+  select(fromId, toId, transit_time) %>%
+  pivot_wider(names_from = toId,
+              values_from = transit_time) %>%
+  column_to_rownames('fromId')
+
+existing_maxjob_transit <- transit_mat_exist %>%
+  rownames_to_column('GEOID') %>%
+  select(GEOID, `06085505006`) %>%
+  rename(transit_existing = `06085505006`) 
+
+zones <- zones %>%
+  left_join(existing_maxjob_transit)
+
+transit_travel_map <- ggplot(zones) +
+  geom_sf(aes(fill = transit_existing),
+          color = NA) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = transit_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Transit") +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+##multiple-seat rides
+transit_mat_rides_exist <- transit_skim_existing %>%
+  select(fromId, toId, n_rides) %>%
+  pivot_wider(names_from = toId,
+              values_from = n_rides) %>%
+  column_to_rownames('fromId')
+
+existing_maxjob_rides_transit <- transit_mat_rides_exist %>%
+  rownames_to_column("GEOID") %>%
+  select(GEOID, `06085505006`) %>%
+  rename(transit_rides_existing = `06085505006`)
+
+zones <- zones %>%
+  left_join(existing_maxjob_rides_transit)
+
+transit_rides_map <- ggplot(zones) +
+  geom_sf(aes(fill = as.character(transit_rides_existing)), 
+          color = NA) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_manual(values = transit_rides_map_palette, 
+                    na.value = alpha("grey69", .7), 
+                    name = "Number of Rides\nfor Trip",
+                    labels = c("One-seat ride", "Two-seat ride", 
+                               "Three-seat ride", "Longer than two hours")) +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+###with transit stops, zoomed in
+
+#set bounds to zoom in on transit
+right_side <- st_bbox(vta_stops)$xmax
+left_side <- st_bbox(vta_stops)$xmin
+top_side <- st_bbox(vta_stops)$ymax
+bottom_side <- st_bbox(vta_stops)$ymin
+
+
+vta_stops_map <- ggplot(zones) +
+  geom_sf(aes(fill = as.character(transit_rides_existing)), 
+          color = NA, alpha = .7) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA, alpha = .7) +
+  geom_sf(data = vta_stops, size = .4) +
+  scale_fill_manual(values = transit_rides_map_palette, 
+                    na.value = alpha("grey69", .7), 
+                    name = "Number of Rides\nfor Trip",
+                    labels = c("One-seat ride", "Two-seat ride", 
+                               "Three-seat ride", "Longer than two hours")) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side), expand = F) +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+
+
+
+#bike
+bike_mat_exist <- bike_skim_existing %>%
+  unique() %>%
+  select(fromId, toId, bike_time) %>%
+  pivot_wider(names_from = toId,
+              values_from = bike_time) %>%
+  column_to_rownames('fromId')
+
+existing_maxjob_bike <- bike_mat_exist %>%
+  rownames_to_column('GEOID') %>%
+  select(GEOID, `06085505006`) %>%
+  rename(bike_existing = `06085505006`) 
+
+zones <- zones %>%
+  left_join(existing_maxjob_bike)
+
+bike_travel_map <- ggplot(zones) +
+  geom_sf(aes(fill = bike_existing),
+          color = NA) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = bike_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Bike") +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+
+#walk
+walk_mat_exist <- walk_skim_existing %>%
+  unique() %>%
+  select(fromId, toId, walk_time) %>%
+  pivot_wider(names_from = toId,
+              values_from = walk_time) %>%
+  column_to_rownames('fromId')
+
+existing_maxjob_walk <- walk_mat_exist %>%
+  rownames_to_column('GEOID') %>%
+  select(GEOID, `06085505006`) %>%
+  rename(walk_existing = `06085505006`) 
+
+zones <- zones %>%
+  left_join(existing_maxjob_walk)
+
+walk_travel_map <- ggplot(zones) +
+  geom_sf(aes(fill = walk_existing),
+          color = NA) +
+  geom_sf(data = zones %>% filter(GEOID == "06085505006"), 
+          fill = "magenta", color = NA) +
+  scale_fill_gradientn(colours = walk_map_palette, 
+                       name = "Travel Time\nto Max Job Tract\nby Foot") +
+  annotation_scale() +
+  theme_void() +
+  theme(text = element_text(size = 14))
+
+car_travel_map
+transit_travel_map
+bike_travel_map
+walk_travel_map
+transit_rides_map
+vta_stops_map
+
+ggsave("graphics/car_travel_map.jpeg", car_travel_map, device = "jpeg")
+ggsave("graphics/transit_travel_map.jpeg", transit_travel_map, device = "jpeg")
+ggsave("graphics/transit_rides_map.jpeg", transit_rides_map, device = "jpeg")
+ggsave("graphics/bike_travel_map.jpeg", bike_travel_map, device = "jpeg")
+ggsave("graphics/walk_travel_map.jpeg", walk_travel_map, device = "jpeg")
+ggsave("graphics/vta_stops_map.jpeg", vta_stops_map, device = "jpeg")
+
+
+```
 
 
 
