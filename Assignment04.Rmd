@@ -52,7 +52,7 @@ centroids <- here("zones",
   st_read() %>%
   st_centroid() %>%
   st_transform("WGS84") %>%
-  rename(id = GEOID)
+  mutate(id = GEOID)
 
 st_write(centroids, here("zones", "centroids.geojson"))
 
