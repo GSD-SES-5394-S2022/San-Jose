@@ -23,14 +23,14 @@ jobs <- here("existing",
              "data",
              "existing_sanjose.csv") %>%
   read_csv() %>%
-  select(GEOID, total_workerE) %>%
-  mutate(GEOID = as.character(GEOID))
+  select(GEOID, total_jobs) %>%
+  mutate(GEOID = as.character(GEOID))%>%
+  rename(id = GEOID)
 
 centroids <- here("zones",
                   "centroids.geojson") %>%
   st_read() %>%
-  left_join(jobs) %>%   #some problems in joining
-  rename(id = GEOID)
+  left_join(jobs, by= "id") 
 ```
 
 #set up r5r core
@@ -45,7 +45,7 @@ existing_core <- here("existing",
 car_access_existing <- accessibility(existing_core,
                                      origins = centroids,
                                      destinations = centroids,
-                                     opportunities_colname = 'total_workerE',
+                                     opportunities_colname = 'total_jobs',
                                      mode = "CAR",
                                      decay_function = "logistic", #need to make a decision here
                                      cutoffs = 30,
@@ -58,14 +58,14 @@ car_access_existing <- accessibility(existing_core,
 transit_access_existing <- accessibility(existing_core,
                                      origins = centroids,
                                      destinations = centroids,
-                                     opportunities_colname = 'total_workerE',
+                                     opportunities_colname = 'total_jobs',
                                      mode = "TRANSIT",
                                      decay_function = "logistic",
                                      cutoffs = 30,
                                      decay_value = 3, 
                                      verbose = FALSE,
                                      departure_datetime = 
-                                       ymd_hm("2021-12-04 17:00"),
+                                       ymd_hm("2022-02-14 16:00"),
                                      time_window = 120)
 ```
 
@@ -92,91 +92,11 @@ existing_map <- chlor_map(access_compare, "ratio",
 
 ```
 
-## alternatives
-
-#set up centroid for alternative conditions
-```{r, message=F, echo=F, warning=F}
-jobs_alt <- here("alternative",
-             "data",
-             "alternative_sanjose.csv") %>%
-  read_csv() %>%
-  select(GEOID, alt_non_wfh) %>% #discuss the new variables
-  mutate(GEOID = as.character(GEOID))
-
-centroids <- here("zones",
-                  "centroids.geojson") %>%
-  st_read() %>%
-  left_join(jobs_alt) %>%   #some problems in joining
-  rename(id = GEOID)
-```
-
-#set up r5r core
-```{r, message=F, echo=F, warning=F}
-alt_core <- here("alternative",
-                      "networks") %>%
-  setup_r5(verbose = FALSE)
-```
-
-#calculate driving under alternative conditions
-```{r, message=F, echo=F, warning=F}
-car_access_alt <- accessibility(alt_core,
-                                     origins = centroids,
-                                     destinations = centroids,
-                                     opportunities_colname = 'alt_non_wfh',
-                                     mode = "CAR",
-                                     decay_function = "logistic", #need to make a decision here
-                                     cutoffs = 30,
-                                     decay_value = 3, 
-                                     verbose = FALSE)
-```
-
-#calculate Transit under alternative conditions
-```{r, message=F, echo=F, warning=F}
-transit_access_alt <- accessibility(alt_core,
-                                     origins = centroids,
-                                     destinations = centroids,
-                                     opportunities_colname = 'alt_non_wfh',
-                                     mode = "TRANSIT",
-                                     decay_function = "logistic",
-                                     cutoffs = 30,
-                                     decay_value = 3, 
-                                     verbose = FALSE,
-                                     departure_datetime = 
-                                       ymd_hm("2021-12-04 17:00"),
-                                     time_window = 120)
-```
-
-#compare driving vs transit for alternative conditions
-```{r, message=F, echo=F, warning=F}
-car_access_alt <- car_access_alt %>%
-  select(from_id, accessibility) %>%
-  rename(GEOID = from_id,
-         car_access = accessibility)
-
-transit_access_alt <- transit_access_alt %>%
-  select(from_id, accessibility) %>%
-  rename(GEOID = from_id,
-         transit_access = accessibility)
-
-access_compare_alt <- left_join(car_access_alt, transit_access_alt) %>%
-  mutate(ratio = transit_access / car_access)
-```
-
-#create chloropleth map for alternative conditions
-```{r, message=F, echo=F, warning=F}
-alt_map <- chlor_map(access_compare_alt, "ratio", 
-                            title = "alternative condition comparison for driving and transit")
-
-```
-
 #saving data
 ```{r}
 write_csv(access_compare, file = here("existing", 
                                       "data",
                                       "access_compare.csv"))
 
-write_csv(access_compare_alt, file = here("alternative", 
-                                      "data",
-                                      "access_compare.csv"))
 ```
 
