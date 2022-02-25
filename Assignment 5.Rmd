@@ -1,0 +1,93 @@
+---
+title: "Assignment05"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
+date: "2/25/2022"
+output: html_document
+---
+
+# Load Libraries
+
+```{r, message=F, echo=F, warning=F}
+options(java.parameters = '-Xmx2G')
+
+library(r5r)
+library(here)
+library(tidyverse)
+library(sf)
+library(lubridate)
+```
+
+#set up centroid for existing conditions
+```{r, message=F, echo=F, warning=F}
+jobs <- here("existing",
+             "data",
+             "existing_sanjose.csv") %>%
+  read_csv() %>%
+  select(GEOID, total_workerE) %>%
+  mutate(GEOID = as.character(GEOID))
+
+centroids <- here("zones",
+                  "centroids.geojson") %>%
+  st_read() %>%
+  left_join(jobs) %>%   #some problems in joining
+  rename(id = GEOID)
+```
+
+#set up r5r core
+```{r, message=F, echo=F, warning=F}
+existing_core <- here("existing",
+                      "networks") %>%
+  setup_r5(verbose = FALSE)
+```
+
+#calculate driving under existing condition
+```{r, message=F, echo=F, warning=F}
+car_access_existing <- accessibility(existing_core,
+                                     origins = centroids,
+                                     destinations = centroids,
+                                     opportunities_colname = 'total_workerE',
+                                     mode = "CAR",
+                                     decay_function = "logistic", #need to make a decision here
+                                     cutoffs = 30,
+                                     decay_value = 3, 
+                                     verbose = FALSE)
+```
+
+#calculate Transit under existing condition
+```{r, message=F, echo=F, warning=F}
+transit_access_existing <- accessibility(existing_core,
+                                     origins = centroids,
+                                     destinations = centroids,
+                                     opportunities_colname = 'total_workerE',
+                                     mode = "TRANSIT",
+                                     decay_function = "logistic",
+                                     cutoffs = 30,
+                                     decay_value = 3, 
+                                     verbose = FALSE,
+                                     departure_datetime = 
+                                       ymd_hm("2021-12-04 17:00"),
+                                     time_window = 120)
+```
+
+#compare driving vs transit for existing 
+```{r, message=F, echo=F, warning=F}
+car_access_existing <- car_access_existing %>%
+  select(from_id, accessibility) %>%
+  rename(GEOID = from_id,
+         car_access = accessibility)
+
+transit_access_existing <- transit_access_existing %>%
+  select(from_id, accessibility) %>%
+  rename(GEOID = from_id,
+         transit_access = accessibility)
+
+access_compare <- left_join(car_access_existing, transit_access_existing) %>%
+  mutate(ratio = transit_access / car_access)
+```
+
+#create chloropleth map for existing
+```{r, message=F, echo=F, warning=F}
+existing_map <- chlor_map(access_compare, "ratio", 
+                            title = "Existing condition comparison for driving and transit")
+
+```
