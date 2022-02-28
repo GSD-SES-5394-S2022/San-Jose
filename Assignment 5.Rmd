@@ -85,10 +85,13 @@ access_compare <- left_join(car_access_existing, transit_access_existing) %>%
   mutate(ratio = transit_access / car_access)
 ```
 
-#create chloropleth map for existing
+#create choropleth map for existing
 ```{r, message=F, echo=F, warning=F}
 existing_map <- chlor_map(access_compare, "ratio", 
                             title = "Existing condition comparison for driving and transit")
+
+# recall choropleth from accessibility?
+# add centroids map where size is the number of jobs
 
 ```
 
