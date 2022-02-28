@@ -40,7 +40,7 @@ existing_core <- here("existing",
   setup_r5(verbose = FALSE)
 ```
 
-#calculate driving under existing condition
+#calculate driving under existing conditions
 ```{r, message=F, echo=F, warning=F}
 car_access_existing <- accessibility(existing_core,
                                      origins = centroids,
@@ -53,7 +53,7 @@ car_access_existing <- accessibility(existing_core,
                                      verbose = FALSE)
 ```
 
-#calculate Transit under existing condition
+#calculate Transit under existing conditions
 ```{r, message=F, echo=F, warning=F}
 transit_access_existing <- accessibility(existing_core,
                                      origins = centroids,
@@ -87,7 +87,7 @@ access_compare <- left_join(car_access_existing, transit_access_existing) %>%
 
 #create choropleth map for existing
 ```{r, message=F, echo=F, warning=F}
-existing_map <- chlor_map(access_compare, "ratio", 
+existing_map <- chor_map(access_compare, "ratio", 
                             title = "Existing condition comparison for driving and transit")
 
 # recall choropleth from accessibility?
