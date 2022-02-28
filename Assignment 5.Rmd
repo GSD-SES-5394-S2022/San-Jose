@@ -85,39 +85,42 @@ access_compare <- left_join(car_access_existing, transit_access_existing) %>%
   mutate(ratio = transit_access / car_access)
 ```
 
-#create choropleth maps for existing conditions
+#create choropleth maps and histogram for existing conditions
 ```{r, message=F, echo=F, warning=F}
-# chor_map(access_compare, "ratio", 
-#                            title = "Existing #condition comparison for driving and transit")
-zones <- here("zones",
-             "zones_sanjose.geojson")
+library(RColorBrewer)
 
-# transit_to_car_acc <- ggplot(zones) +
-  # geom_sf(aes(fill = transit_existing),
-  #         color = NA) +
-  # geom_sf(data = zones %>% filter(GEOID == "06085505006"),
-  #         fill = "magenta", color = NA) +
-  # scale_fill_gradientn(colours = transit_map_palette,
-  #                      name = "Travel Time\nto Max Job Tract\nby Transit") +
-  # annotation_scale() +
-  # theme_void() +
-  # theme(text = element_text(size = 14))
+zones <- st_read(here("zones",
+             "zones_sanjose.geojson")) %>%
+  left_join(access_compare)
+
+transit_map_palette <- brewer.pal(5, "YlGn")
+
+transit_to_car_acc_map <- ggplot(zones) +
+geom_sf(aes(fill = ratio),
+          color = NA) +
+  scale_fill_gradientn(colours = transit_map_palette,
+                       name = "Transit accessibility / Car accessibility") +
+  theme_void() +
+  theme(text = element_text(size = 14))
 
 opportunities_map <- ggplot(centroids) +
+      geom_sf(data = zones, color = "gray32", fill = NA, size = 0.3) +
   geom_sf(aes(size = total_jobs),
-        fill = "firebrick1",
-        alpha = 0.5) +
+        color = "firebrick1",
+        alpha = 0.4) +
   theme_void() +
-  theme(text = element_text(size = 14)) +
-  geom_sf(zones, aes(color = "gray32", size = 1))
+  theme(text = element_text(size = 14))
 
 hist_ratio <- ggplot(access_compare, aes(x = ratio)) +
-  geom_histogram(aes(y=..count..*10), bins = 30, fill = "dodgerblue3") +
+  geom_histogram(aes(y=..count..), binwidth = 0.05, fill = "dodgerblue3", origin = 0) +
   labs(y = "Count of Tracts", x = "Transit accessibility / Car accessibility") +
   theme_minimal()
 
+transit_to_car_acc_map
 opportunities_map
 hist_ratio
+
+ggsave("graphics/transit_to_car_acc_map.png", transit_to_car_acc_map, device = "png")
 
 ggsave("graphics/opportunities_map.png", opportunities_map, device = "png")
 
