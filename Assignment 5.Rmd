@@ -85,13 +85,43 @@ access_compare <- left_join(car_access_existing, transit_access_existing) %>%
   mutate(ratio = transit_access / car_access)
 ```
 
-#create choropleth map for existing
+#create choropleth maps for existing conditions
 ```{r, message=F, echo=F, warning=F}
-existing_map <- chor_map(access_compare, "ratio", 
-                            title = "Existing condition comparison for driving and transit")
+# chor_map(access_compare, "ratio", 
+#                            title = "Existing #condition comparison for driving and transit")
+zones <- here("zones",
+             "zones_sanjose.geojson")
 
-# recall choropleth from accessibility?
-# add centroids map where size is the number of jobs
+# transit_to_car_acc <- ggplot(zones) +
+  # geom_sf(aes(fill = transit_existing),
+  #         color = NA) +
+  # geom_sf(data = zones %>% filter(GEOID == "06085505006"),
+  #         fill = "magenta", color = NA) +
+  # scale_fill_gradientn(colours = transit_map_palette,
+  #                      name = "Travel Time\nto Max Job Tract\nby Transit") +
+  # annotation_scale() +
+  # theme_void() +
+  # theme(text = element_text(size = 14))
+
+opportunities_map <- ggplot(centroids) +
+  geom_sf(aes(size = total_jobs),
+        fill = "firebrick1",
+        alpha = 0.5) +
+  theme_void() +
+  theme(text = element_text(size = 14)) +
+  geom_sf(zones, aes(color = "gray32", size = 1))
+
+hist_ratio <- ggplot(access_compare, aes(x = ratio)) +
+  geom_histogram(aes(y=..count..*10), bins = 30, fill = "dodgerblue3") +
+  labs(y = "Count of Tracts", x = "Transit accessibility / Car accessibility") +
+  theme_minimal()
+
+opportunities_map
+hist_ratio
+
+ggsave("graphics/opportunities_map.png", opportunities_map, device = "png")
+
+ggsave("graphics/hist_acc_ratio.png", hist_ratio, device = "png")
 
 ```
 
