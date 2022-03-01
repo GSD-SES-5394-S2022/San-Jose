@@ -99,7 +99,7 @@ transit_to_car_acc_map <- ggplot(zones) +
 geom_sf(aes(fill = ratio),
           color = NA) +
   scale_fill_gradientn(colours = transit_map_palette,
-                       name = "Transit accessibility / Car accessibility") +
+                       name = "Transit accessibility / \nCar accessibility") +
   theme_void() +
   theme(text = element_text(size = 14))
 
@@ -131,6 +131,10 @@ ggsave("graphics/hist_acc_ratio.png", hist_ratio, device = "png")
 #saving data
 ```{r}
 write_csv(access_compare, file = here("existing", 
+                                      "data",
+                                      "access_compare.csv"))
+
+write_csv(access_compare, file = here("alternative", 
                                       "data",
                                       "access_compare.csv"))
 
