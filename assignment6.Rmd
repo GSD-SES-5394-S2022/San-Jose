@@ -1,0 +1,90 @@
+---
+title: "assignment 6"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
+date: "3/3/2022"
+output: html_document
+---
+
+```{r, message=F, echo=F, warning=F}
+library(r5r)
+library(here)
+library(tidyverse)
+library(sf)
+library(lubridate)
+```
+
+#set up data
+```{r, message=F, echo=F, warning=F}
+access <- here("existing",
+               "data",
+               "access_compare.csv") %>%
+  read_csv()
+
+zones <- here("existing",
+               "data",
+               "existing_sanjose.csv") %>%
+  read_csv()
+```
+
+#select model variables
+```{r, echo=FALSE}
+model_data <- left_join(zones, access) %>%
+  mutate(pct_big_hh = (hh_3personE + hh_4person_plusE) / total_hhsE,
+         pct_lo_inc = inc_quint_1 / total_hhsE,
+         pct_hi_inc = inc_quint_5 / total_hhsE,
+         pct_no_veh = no_vehE / total_hhsE) %>%
+  select(GEOID, pct_big_hh, pct_lo_inc, pct_hi_inc, ratio, pct_no_veh)
+```
+
+#visualize model variables
+```{r}
+ggplot(model_data, aes(x = pct_lo_inc, y = pct_no_veh)) +
+  geom_point(size = 1, color = "blue") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
+```
+
+#estimate regressions 
+```{r, echo=FALSE}
+model1 <- lm(pct_no_veh ~ pct_big_hh + pct_lo_inc + pct_hi_inc + ratio, data = model_data)
+
+export_summs(model1)
+
+#Refine model after taking out non-statistically significant variables
+model2 <- lm(pct_no_veh ~ pct_lo_inc + ratio, data = model_data)
+
+export_summs(model1, model2)
+
+```
+
+
+#Apply regression to alternative
+```{r, echo=FALSE}
+alt_access <- here("alternative",
+               "data",
+               "access_compare.csv") %>%
+  read_csv()
+
+alt_zones <- here("alternative",
+               "data",
+               "zone_data.csv") %>%
+  read_csv() %>%
+  left_join(access) %>%
+  mutate(pct_big_hh = (hh_3personE + hh_4person_plusE) / total_hhsE,
+         pct_lo_inc = inc_quint_1 / total_hhsE,
+         pct_hi_inc = inc_quint_5 / total_hhsE,
+         pct_no_veh = no_vehE / total_hhsE) %>%
+  add_predictions(model = model2) %>%
+  mutate(pct_no_veh = pred) %>%
+  mutate(no_vehE = round(total_hhsE * pct_no_veh)) 
+
+```
+
+#saving data
+```{r}
+write_csv(alt_zones, file = here("existing", 
+                                      "data",
+                                      "alt_zones.csv"))
+
+
+
+```
