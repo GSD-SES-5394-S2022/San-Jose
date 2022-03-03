@@ -11,6 +11,8 @@ library(here)
 library(tidyverse)
 library(sf)
 library(lubridate)
+library(modelr)
+library(jtools)
 ```
 
 #set up data
@@ -23,7 +25,15 @@ access <- here("existing",
 zones <- here("existing",
                "data",
                "existing_sanjose.csv") %>%
-  read_csv()
+  read_csv() %>%
+  mutate(inc_quint_1 = inc_lt_10kE +
+                       inc_btw_10k_15kE +
+                       inc_btw_15k_20kE +
+                       inc_btw_20k_25kE,
+         inc_quint_5 = inc_btw_100k_125kE +
+                       inc_btw_125k_150kE +
+                       inc_btw_150k_200kE +
+                       inc_gt_200kE)
 ```
 
 #select model variables
@@ -32,20 +42,22 @@ model_data <- left_join(zones, access) %>%
   mutate(pct_big_hh = (hh_3personE + hh_4person_plusE) / total_hhsE,
          pct_lo_inc = inc_quint_1 / total_hhsE,
          pct_hi_inc = inc_quint_5 / total_hhsE,
-         pct_no_veh = no_vehE / total_hhsE) %>%
-  select(GEOID, pct_big_hh, pct_lo_inc, pct_hi_inc, ratio, pct_no_veh)
+         pct_no_veh = no_veh_hhE / total_hhsE,
+         pct_wfh_pop=total_wfhE/total_workerE) %>%
+  mutate(ratio=ifelse(model_data$ratio > 1, 1, model_data$ratio)) %>%
+  select(GEOID, pct_big_hh, pct_lo_inc, pct_hi_inc, ratio, pct_no_veh,pct_wfh_pop)
 ```
 
 #visualize model variables
 ```{r}
-ggplot(model_data, aes(x = pct_lo_inc, y = pct_no_veh)) +
+ggplot(model_data, aes(y = pct_no_veh, x = pct_wfh_pop)) +
   geom_point(size = 1, color = "blue") +
   geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
 ```
 
 #estimate regressions 
 ```{r, echo=FALSE}
-model1 <- lm(pct_no_veh ~ pct_big_hh + pct_lo_inc + pct_hi_inc + ratio, data = model_data)
+model1 <- lm(pct_no_veh ~ pct_big_hh+pct_lo_inc+ pct_hi_inc+ ratio+pct_wfh_pop, data = model_data)
 
 export_summs(model1)
 
