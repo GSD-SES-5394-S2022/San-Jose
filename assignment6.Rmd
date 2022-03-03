@@ -58,7 +58,7 @@ model_data <- model_data %>%
 #visualize model variables, exploring correlations
 ```{r}
 scatterplot_yy <- ggplot(model_data, aes(y = pct_no_veh, x = pct_cardef_hh)) +
-  geom_point(size = 1, color = "blue") +
+  geom_point(size = 1, color = "red") +
   geom_smooth(size = 0.5, lty = "dashed", color = "red", method = "lm") # corr between both Ys
 
 # corr between "Y1" (carless) and all Xs
@@ -75,7 +75,9 @@ scatterplot_y1x3 <- ggplot(model_data, aes(y = pct_no_veh, x = pct_hi_inc)) +
   geom_point(size = 1, color = "blue") +
   geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
 
-scatterplot_y1x4 <- ggplot(model_data, aes(y = pct_no_veh, x = ratio)) +
+no_ratio_outliers <- filter(model_data, ratio <.5)
+
+scatterplot_y1x4 <- ggplot(no_ratio_outliers, aes(y = pct_no_veh, x = ratio)) +
   geom_point(size = 1, color = "blue") +
   geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
 
@@ -94,32 +96,32 @@ scatterplot_y1x7 <- ggplot(model_data, aes(y = pct_no_veh, x = transit_access_10
 # corr between "Y2" (auto_deficit) and all Xs
 
 scatterplot_y2x1 <- ggplot(model_data, aes(y = pct_cardef_hh, x = pct_big_hh)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
 scatterplot_y2x2 <- ggplot(model_data, aes(y = pct_cardef_hh, x = pct_lo_inc)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
 scatterplot_y2x3 <- ggplot(model_data, aes(y = pct_cardef_hh, x = pct_hi_inc)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
-scatterplot_y2x4 <- ggplot(model_data, aes(y = pct_cardef_hh, x = ratio)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+scatterplot_y2x4 <- ggplot(no_ratio_outliers, aes(y = pct_cardef_hh, x = ratio)) +
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
 scatterplot_y2x5 <- ggplot(model_data, aes(y = pct_cardef_hh, x = pct_wfh_pop)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
 scatterplot_y2x6 <- ggplot(model_data, aes(y = pct_cardef_hh, x = car_access)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
 scatterplot_y2x7 <- ggplot(model_data, aes(y = pct_cardef_hh, x = transit_access_100k)) +
-  geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "green", method = "lm")
+  geom_point(size = 1, color = "darkseagreen") +
+  geom_smooth(size = 0.5, lty = "dashed", color = "darkseagreen", method = "lm")
 
 scatterplot_yy
 scatterplot_y1x1
