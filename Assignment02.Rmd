@@ -63,7 +63,14 @@ vars <- c(med_income = "B06011_001",
           inc_btw_150k_200k = 'B19001_016',
           inc_gt_200k = 'B19001_017',
           total_worker = 'B08301_001',
-          total_wfh = 'B08301_021') 
+          total_wfh = 'B08301_021',
+          hh_cardef_1w0v = 'B08203_014',
+          hh_cardef_2w0v = 'B08203_020',
+          hh_cardef_2w1v = 'B08203_021',
+          hh_cardef_3w0v = 'B08203_026',
+          hh_cardef_3w1v = 'B08203_027',
+          hh_cardef_3w2v = 'B08203_028'
+          ) 
 
 
 ca_tracts <- get_acs(geography = "tract",
@@ -121,7 +128,10 @@ census <- census %>%
   mutate(ratio_no_veh = no_veh_hhE / total_hhsE,
          ratio_no_worker = no_worker_hhE / total_hhsE,
          ratio_lt_10k = inc_lt_10kE / total_hhsE,
-         non_wfh = total_workerE - total_wfhE)
+         non_wfh = total_workerE - total_wfhE,
+         cardef_hh = hh_cardef_1w0vE + hh_cardef_2w0vE + 
+           hh_cardef_2w1vE + hh_cardef_3w0vE + hh_cardef_3w1vE + hh_cardef_3w2vE,
+         carnodef_hh = total_hhsE - cardef_hh)
 
 sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), add.median = TRUE, title = 'Summary Statistics - Vulnerability Ratios', col.width = c(10))
 ```
