@@ -165,7 +165,7 @@ alt_access <- here("alternative",
 
 alt_zones <- here("alternative",
                "data",
-               "zone_data.csv") %>%
+               "alternative_sanjose.csv") %>%
   read_csv() %>%
   left_join(access) %>%
   mutate(pct_big_hh = (hh_3personE + hh_4person_plusE) / total_hhsE,
