@@ -1,0 +1,219 @@
+---
+title: "assignment 7"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
+date: "3/3/2022"
+output: html_document
+---
+
+```{r, message=F, echo=F, warning=F}
+library(here)
+library(tidyverse)
+library(survey)
+library(srvyr)
+library(naniar)
+library(jtools)
+library(knitr)
+```
+
+
+#set up NHTS data
+```{r, message=F, echo=F, warning=F}
+temp <- tempfile()
+download.file("https://nhts.ornl.gov/assets/2016/download/csv.zip", temp)
+
+trips <- read_csv(unz(temp, "trippub.csv"))
+hhs <- read_csv(unz(temp, "hhpub.csv"))
+
+unlink(temp)
+```
+
+
+#select household level variables
+```{r, message=F, echo=F, warning=F}
+sanjose_hhs <- hhs %>%
+  filter(HH_CBSA == "41940") %>%
+  mutate(inc_quint_ = case_when(HHFAMINC == "01" ~ "1st",
+                               HHFAMINC == "02" ~ "1st",
+                               HHFAMINC == "03" ~ "1st",
+                               HHFAMINC == "04" ~ "2nd",
+                               HHFAMINC == "05" ~ "2nd",
+                               HHFAMINC == "06" ~ "3rd",
+                               HHFAMINC == "07" ~ "4th",
+                               HHFAMINC == "08" ~ "5th",
+                               HHFAMINC == "09" ~ "5th",
+                               HHFAMINC == "10" ~ "5th",
+                               HHFAMINC == "11" ~ "5th",
+                               TRUE ~ "NA")) %>%
+  mutate(size_ = case_when(HHSIZE == 1 ~ "one",
+                              HHSIZE == 2 ~ "two",
+                              HHSIZE == 3 ~ "three",
+                              TRUE ~ "four_plus")) %>%
+  mutate(zero_veh_ = (HHVEHCNT == 0)) %>%
+  replace_with_na(list(inc_quint_ = "NA")) %>%
+  select(HOUSEID, zero_veh_, size_, inc_quint_, WTHHFIN) 
+#need to see what other variables?
+```
+
+#select trip level variables
+```{r, message=F, echo=F, warning=F}
+
+#carole's original category
+trips_by_purpose_CAROLE <- trips %>% 
+  filter(HH_CBSA == "15380") %>%
+  select(HOUSEID, WHYFROM, WHYTO) %>%
+  mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
+                                WHYTO == "02" ~ TRUE,
+                                WHYFROM == "01" ~ TRUE,
+                                WHYFROM == "02" ~ TRUE,
+                                TRUE ~ FALSE)) %>%
+  mutate(work = ifelse(WHYTO == "03" | WHYFROM == "03", TRUE, FALSE)) %>%
+  mutate(purpose = case_when(home_based & work ~ "HBW",
+                            home_based ~ "HBO",
+                            TRUE ~ "NHB")) %>%
+  group_by(HOUSEID, purpose) %>%
+  summarize(n = n()) %>%
+  pivot_wider(names_from = "purpose", values_from = "n") 
+
+#differentiate wfh household household trips from other home-based trip
+trips_by_purpose_Claire <- trips %>% 
+  filter(HH_CBSA == "41940") %>%
+  select(HOUSEID, WHYFROM, WHYTO) %>%
+  mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
+                                WHYFROM == "01" ~ TRUE,
+                                TRUE ~ FALSE)) %>%
+  mutate(work = ifelse(WHYTO == "03" | WHYFROM == "03", TRUE, FALSE)) %>%
+  mutate(wfh = ifelse(WHYTO == "02" | WHYFROM == "02", TRUE, FALSE)) %>%
+  mutate(purpose = case_when(home_based & work ~ "HBW",
+                            home_based ~ "HBO",
+                            wfh ~ "WFHB",
+                            TRUE ~ "NHB")) %>%
+  group_by(HOUSEID, purpose) %>%
+  summarize(n = n()) %>%
+  pivot_wider(names_from = "purpose", values_from = "n") 
+
+```
+
+#join trip data to hh data
+
+```{r, message=F, echo=F, warning=F}
+
+#carole's original category
+
+hh_trips_Carole <- left_join(sanjose_hhs, trips_by_purpose_CAROLE) %>%
+  replace_na(list(HBW = 0,
+                  HBO = 0,
+                  NHB = 0))
+
+#our version
+
+hh_trips_Claire <- left_join(sanjose_hhs, trips_by_purpose_Claire) %>%
+  replace_na(list(HBW = 0,
+                  HBO = 0,
+                  WFHB = 0,
+                  NHB = 0))
+
+
+```
+
+#CREATE SURVEY OBJECT
+
+```{r, message=F, echo=F, warning=F}
+
+#carole's original category
+
+svy_trips <- hh_trips_Carole %>%
+  as_survey(weights = WTHHFIN)
+
+#our version
+
+svy_trips <- hh_trips_Claire %>%
+  as_survey(weights = WTHHFIN)
+
+```
+
+#Estimate a house-hold level regression model
+
+```{r, message=F, echo=F, warning=F}
+
+#carole's original category
+
+HBO_model1 <- svyglm(HBO ~ zero_veh_ + size_ + inc_quint_, svy_trips)
+
+export_summs(HBO_model1, 
+             error_pos = "right", 
+             error_format = "(p = {p.value})",
+             model.names = "Full model")
+
+#remote non-statistically significant var (zero_veh_hh & quantile)
+
+HBO_model2 <- svyglm(HBO ~size_, svy_trips)
+
+export_summs(HBO_model1, HBO_model2,
+             error_pos = "right", 
+             error_format = "(p = {p.value})",
+             model.names = c("Full model", "Reduced model"))
+```
+
+#Apply trip production model to zonal data
+
+```{r, message=F, echo=F, warning=F}
+
+existing_zones <- here("existing",
+                       "data",
+                       "existing_sanjose.csv") %>%
+  read_csv() %>%
+  mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
+                    hh_1personE * HBO_model2$coefficients["size_one"] +
+                    hh_2personE * HBO_model2$coefficients["size_two"] +
+                    hh_3personE * HBO_model2$coefficients["size_three"])
+
+
+```
+
+#Trip attractions
+
+```{r, message=F, echo=F, warning=F}
+
+#carole's original category
+
+existing_zones <- existing_zones %>%
+  replace_na(list(basic_jobs = 0,
+                  retail_jobs = 0, 
+                  service_jobs = 0)) %>%
+  mutate(hbo_attr = 0.7 * total_hhsE +
+                    0.7 * basic_jobs +
+                    8.4 * retail_jobs +
+                    3.5 * service_jobs) #workers? jobs??
+
+```
+
+#Balancing
+
+```{r, message=F, echo=F, warning=F}
+
+#carole's original category
+
+trip_end_summary <- tibble(Purpose = c("HBO"),
+                           Productions = c(sum(existing_zones$hbo_prod)),
+                           Attractions = c(sum(existing_zones$hbo_attr)),
+                           Difference = c(sum(existing_zones$hbo_attr) - 
+                                            sum(existing_zones$hbo_prod)))
+
+kable(trip_end_summary, format.args = list(big.mark = ","))
+
+existing_zones <- existing_zones %>%
+  mutate(hbo_attr_bal = hbo_attr * 
+           sum(existing_zones$hbo_prod) / sum(existing_zones$hbo_attr))
+
+#check
+trip_end_summary <- tibble(Purpose = c("HBO"),
+                           Productions = c(sum(existing_zones$hbo_prod)),
+                           Attractions = c(sum(existing_zones$hbo_attr_bal)),
+                           Difference = c(sum(existing_zones$hbo_attr_bal) - 
+                                            sum(existing_zones$hbo_prod)))
+
+kable(trip_end_summary, format.args = list(big.mark = ","))
+```
+
+#create some chloropleth maps and/or dot-density maps
+
