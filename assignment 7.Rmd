@@ -205,9 +205,8 @@ export_summs(NHB_model1, NHB_model2,
              model.names = c("Full model", "Reduced model"))
 
 ```
-#Apply trip production model to zonal data
+#Apply trip production model to existing zonal data
 ```{r, message=F, echo=F, warning=F}
-## TBD
 existing_zones <- here("existing",
                        "data",
                        "existing_sanjose.csv") %>%
@@ -215,12 +214,29 @@ existing_zones <- here("existing",
   mutate(wfh_ratio = total_wfhE / total_workerE) %>%
   mutate(wfh_int = case_when(wfh_ratio <= 0.05 ~ 'low',
                              wfh_ratio <= 0.075 & wfh_ratio > 0.05 ~ 'mid',
-                             TRUE ~ 'high'))
+                             TRUE ~ 'high')) %>%
   # (see brackets justification below)
-  # mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
-  #          hh_1personE * HBO_model2$coefficients["size_one"] +
-  #          hh_2personE * HBO_model2$coefficients["size_two"] +
-  #          hh_3personE * HBO_model2$coefficients["size_three"])
+  mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
+           hh_1personE * HBO_model2$coefficients["size_one"] +
+           hh_2personE * HBO_model2$coefficients["size_two"] +
+           hh_3personE * HBO_model2$coefficients["size_three"] +
+           total_hhsE * if (existing_zones$wfh_int == 'mid') {HBO_model2$coefficients["wfh_int_mid"]}
+         else if (existing_zones$wfh_int == 'high') {HBO_model2$coefficients["wfh_int_high"]}
+         else {0}) %>%
+  mutate(hbw_prod = total_hhsE * HBW_model2$coefficients["(Intercept)"] +
+           hh_1personE * HBW_model2$coefficients["size_one"] +
+           hh_2personE * HBW_model2$coefficients["size_two"] +
+           hh_3personE * HBW_model2$coefficients["size_three"] +
+           total_hhsE * if (existing_zones$wfh_int == 'mid') {HBW_model2$coefficients["wfh_int_mid"]}
+         else if (existing_zones$wfh_int == 'high') {HBW_model2$coefficients["wfh_int_high"]}
+         else {0}) %>%
+  mutate(nhb_prod = total_hhsE * NHB_model2$coefficients["(Intercept)"] +
+           hh_1personE * NHB_model2$coefficients["size_one"] +
+           hh_2personE * NHB_model2$coefficients["size_two"] +
+           hh_3personE * NHB_model2$coefficients["size_three"] +
+           total_hhsE * if (existing_zones$wfh_int == 'mid') {NHB_model2$coefficients["wfh_int_mid"]}
+         else if (existing_zones$wfh_int == 'high') {NHB_model2$coefficients["wfh_int_high"]}
+         else {0})
 
 # histograms showing distributions for wfh_ratio at the census tract- and household-level, respectively. Approximate deciles were used to trace categorical parallelisms between the aggregated and disaggregated data.
 
@@ -228,6 +244,41 @@ hist(existing_zones$wfh_ratio)
 hist(hh_pers_trips$wfh_ratio)
 quantile(existing_zones$wfh_ratio, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
 quantile(hh_pers_trips$wfh_ratio, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+
+```
+
+#Apply trip production model to alternative zonal data
+
+```{r, message=F, echo=F, warning=F}
+alternative_zones <- here("alternative",
+                       "data",
+                       "alternative_sanjose.csv") %>%
+  read_csv() %>%
+  mutate(wfh_ratio = alt_wfh / total_workerE) %>%
+  mutate(wfh_int = case_when(wfh_ratio <= 0.05 ~ 'low',
+                             wfh_ratio <= 0.075 & wfh_ratio > 0.05 ~ 'mid',
+                             TRUE ~ 'high')) %>%
+  mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
+           hh_1personE * HBO_model2$coefficients["size_one"] +
+           hh_2personE * HBO_model2$coefficients["size_two"] +
+           hh_3personE * HBO_model2$coefficients["size_three"] +
+           total_hhsE * if (existing_zones$wfh_int == 'mid') {HBO_model2$coefficients["wfh_int_mid"]}
+         else if (existing_zones$wfh_int == 'high') {HBO_model2$coefficients["wfh_int_high"]}
+         else {0}) %>%
+  mutate(hbw_prod = total_hhsE * HBW_model2$coefficients["(Intercept)"] +
+           hh_1personE * HBW_model2$coefficients["size_one"] +
+           hh_2personE * HBW_model2$coefficients["size_two"] +
+           hh_3personE * HBW_model2$coefficients["size_three"] +
+           total_hhsE * if (existing_zones$wfh_int == 'mid') {HBW_model2$coefficients["wfh_int_mid"]}
+         else if (existing_zones$wfh_int == 'high') {HBW_model2$coefficients["wfh_int_high"]}
+         else {0}) %>%
+  mutate(nhb_prod = total_hhsE * NHB_model2$coefficients["(Intercept)"] +
+           hh_1personE * NHB_model2$coefficients["size_one"] +
+           hh_2personE * NHB_model2$coefficients["size_two"] +
+           hh_3personE * NHB_model2$coefficients["size_three"] +
+           total_hhsE * if (existing_zones$wfh_int == 'mid') {NHB_model2$coefficients["wfh_int_mid"]}
+         else if (existing_zones$wfh_int == 'high') {NHB_model2$coefficients["wfh_int_high"]}
+         else {0})
 
 ```
 
