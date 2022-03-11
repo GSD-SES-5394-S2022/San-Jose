@@ -29,7 +29,7 @@ unlink(temp)
 ```
 
 
-#select household level variables
+#select household-level variables
 ```{r, message=F, echo=F, warning=F}
 sanjose_hhs <- hhs %>%
   filter(HH_CBSA == "41940") %>%
@@ -55,7 +55,17 @@ sanjose_hhs <- hhs %>%
 #need to see what other variables?
 ```
 
-#select trip level variables
+#select person-level variables
+```{r}
+sanjose_pers <- person %>%
+  filter(HH_CBSA == "41940") %>%
+  mutate(WFH_exh = case_when(WRK_HOME == '01' | WKRMHM == '01' | WKFMHMXX > 0) ~ 1,
+         TRUE ~ 0) %>% # workers who work from home, have the option to do so, or have effectively worked from home more than one day during that month
+  select(HOUSEID, WFH_exh)
+```
+
+
+#select trip-level variables
 ```{r, message=F, echo=F, warning=F}
 
 #carole's original category
