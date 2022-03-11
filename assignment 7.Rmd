@@ -158,14 +158,14 @@ export_summs(HBO_model1,
              error_format = "(p = {p.value})",
              model.names = "Full model")
 
-#remote non-statistically significant var (zero_veh_hh & quantile)
+#remote non-statistically significant vars (zero_veh_hh & income quantiles, wfh preserved)
 
-# HBO_model2 <- svyglm(HBO ~size_, svy_trips)
-# 
-# export_summs(HBO_model1, HBO_model2,
-#              error_pos = "right", 
-#              error_format = "(p = {p.value})",
-#              model.names = c("Full model", "Reduced model"))
+HBO_model2 <- svyglm(HBO ~ size_ + wfh_int_, svy_trips)
+
+export_summs(HBO_model1, HBO_model2,
+             error_pos = "right",
+             error_format = "(p = {p.value})",
+             model.names = c("Full model", "Reduced model"))
 ```
 
 ```{r, message=F, echo=F, warning=F}
@@ -176,16 +176,15 @@ export_summs(HBW_model1,
              error_format = "(p = {p.value})",
              model.names = "Full model")
 
-#remote non-statistically significant var (zero_veh_hh & quantile)
+#remote non-statistically significant vars (zero_veh_hh & income quantiles, wfh preserved)
 
-# HBW_model2 <- svyglm(HBW ~size_, svy_trips)
-# 
-# export_summs(HBW_model1, HBW_model2,
-#              error_pos = "right", 
-#              error_format = "(p = {p.value})",
-#              model.names = c("Full model", "Reduced model"))
+HBW_model2 <- svyglm(HBW ~ size_ + wfh_int_, svy_trips)
 
-#Apply trip production model to zonal data
+export_summs(HBW_model1, HBW_model2,
+             error_pos = "right",
+             error_format = "(p = {p.value})",
+             model.names = c("Full model", "Reduced model"))
+
 ```
 
 ```{r, message=F, echo=F, warning=F}
@@ -196,18 +195,17 @@ export_summs(NHB_model1,
              error_format = "(p = {p.value})",
              model.names = "Full model")
 
-#remote non-statistically significant var (zero_veh_hh & quantile)
+#remote non-statistically significant vars (zero_veh_hh & income quantiles, wfh preserved)
 
-# NHB_model2 <- svyglm(NHB ~size_, svy_trips)
-# 
-# export_summs(NHB_model1, NHB_model2,
-#              error_pos = "right", 
-#              error_format = "(p = {p.value})",
-#              model.names = c("Full model", "Reduced model"))
+NHB_model2 <- svyglm(NHB ~ size_ + wfh_int_, svy_trips)
 
-#Apply trip production model to zonal data
+export_summs(NHB_model1, NHB_model2,
+             error_pos = "right",
+             error_format = "(p = {p.value})",
+             model.names = c("Full model", "Reduced model"))
+
 ```
-
+#Apply trip production model to zonal data
 ```{r, message=F, echo=F, warning=F}
 ## TBD
 existing_zones <- here("existing",
