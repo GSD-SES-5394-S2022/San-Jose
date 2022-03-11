@@ -130,10 +130,13 @@ hh_pers_trips <- left_join(sanjose_hhs, trips_by_purpose) %>%
   left_join(sanjose_pers_agg) %>%
   mutate(wfh_ratio = WFH_exh / WRKCOUNT) %>%
   replace_na(list(wfh_ratio = 0)) %>%
-  mutate(wfh_int_ = case_when(wfh_ratio == 0 ~ 'no',
-                             wfh_ratio != 0 & wfh_ratio <= 0.25 ~ 'low',
-                             wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
-                             TRUE ~ 'high'))
+  mutate(wfh_int_ = case_when(wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
+                              wfh_ratio > 0.5 ~ 'high',
+                             TRUE ~ 'low'))
+
+# let a low-wfh intensity be the reference for regs
+
+hh_pers_trips$wfh_int_ <- relevel(factor(hh_pers_trips$wfh_int_), ref="low")
 ```
 
 #CREATE SURVEY OBJECT
@@ -148,7 +151,7 @@ svy_trips <- hh_pers_trips %>%
 #Estimate household-level regression models
 
 ```{r, message=F, echo=F, warning=F}
-HBO_model1 <- svyglm(HBO ~ zero_veh_ + size_ + inc_quint_, wfh_int_, svy_trips)
+HBO_model1 <- svyglm(HBO ~ zero_veh_ + size_ + inc_quint_ + wfh_int_, svy_trips)
 
 export_summs(HBO_model1, 
              error_pos = "right", 
@@ -166,7 +169,7 @@ export_summs(HBO_model1,
 ```
 
 ```{r, message=F, echo=F, warning=F}
-HBW_model1 <- svyglm(HBW ~ zero_veh_ + size_ + inc_quint_, wfh_int_, svy_trips)
+HBW_model1 <- svyglm(HBW ~ zero_veh_ + size_ + inc_quint_ + wfh_int_, svy_trips)
 
 export_summs(HBW_model1, 
              error_pos = "right", 
@@ -186,7 +189,7 @@ export_summs(HBW_model1,
 ```
 
 ```{r, message=F, echo=F, warning=F}
-NHB_model1 <- svyglm(NHB ~ zero_veh_ + size_ + inc_quint_, wfh_int_, svy_trips)
+NHB_model1 <- svyglm(NHB ~ zero_veh_ + size_ + inc_quint_ + wfh_int_, svy_trips)
 
 export_summs(NHB_model1, 
              error_pos = "right", 
@@ -212,27 +215,28 @@ existing_zones <- here("existing",
                        "existing_sanjose.csv") %>%
   read_csv() %>%
   mutate(wfh_ratio = total_wfhE / total_workerE) %>%
-  mutate(wfh_int = case_when(wfh_ratio >= 0 & wfh_ratio <= 0.25 ~ 'low',
-                             wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
-                             TRUE ~ 'high')) %>%
-  mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
-           hh_1personE * HBO_model2$coefficients["size_one"] +
-           hh_2personE * HBO_model2$coefficients["size_two"] +
-           hh_3personE * HBO_model2$coefficients["size_three"])
+  mutate(wfh_int = case_when(wfh_ratio <= 0.05 ~ 'low',
+                             wfh_ratio <= 0.075 & wfh_ratio > 0.05 ~ 'mid',
+                             TRUE ~ 'high'))
+  # (see brackets justification below)
+  # mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
+  #          hh_1personE * HBO_model2$coefficients["size_one"] +
+  #          hh_2personE * HBO_model2$coefficients["size_two"] +
+  #          hh_3personE * HBO_model2$coefficients["size_three"])
 
+# histograms showing distributions for wfh_ratio at the census tract- and household-level, respectively. Approximate deciles were used to trace categorical parallelisms between the aggregated and disaggregated data.
 
-```
-
-```{r}
 hist(existing_zones$wfh_ratio)
 hist(hh_pers_trips$wfh_ratio)
-```
+quantile(existing_zones$wfh_ratio, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
+quantile(hh_pers_trips$wfh_ratio, probs = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1))
 
+```
 
 #Trip attraction
 
 ```{r, message=F, echo=F, warning=F}
-
+# TBD
 #carole's original category
 
 existing_zones <- existing_zones %>%
@@ -249,7 +253,7 @@ existing_zones <- existing_zones %>%
 #Balancing
 
 ```{r, message=F, echo=F, warning=F}
-
+# TBD
 #carole's original category
 
 trip_end_summary <- tibble(Purpose = c("HBO"),
