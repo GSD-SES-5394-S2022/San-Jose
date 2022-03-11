@@ -129,10 +129,10 @@ hh_pers_trips <- left_join(sanjose_hhs, trips_by_purpose) %>%
                   HBO = 0,
                   NHB = 0)) %>%
   left_join(sanjose_pers_agg) %>%
-  mutate(ratio_wfh = WFH_exh / WRKCOUNT,
-         wfh_int_ = case_when(ratio_wfh = 0 ~ 'no',
-                             ratio_wfh != 0 & ratio_wfh <= 0.25 ~ 'low',
-                             ratio_wfh <= 0.5 & ratio_wfh > 0.25 ~ 'mid',
+  mutate(wfh_ratio = WFH_exh / WRKCOUNT,
+         wfh_int_ = case_when(wfh_ratio == 0 ~ 'no',
+                             wfh_ratio != 0 & wfh_ratio_wfh <= 0.25 ~ 'low',
+                             wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
                              TRUE ~ 'high'))
 
 #our version
@@ -229,20 +229,24 @@ existing_zones <- here("existing",
                        "existing_sanjose.csv") %>%
   read_csv() %>%
   mutate(wfh_ratio = total_wfhE / total_workerE) %>%
-  mutate(wfh_int = case_when(wfh_ratio = 0 ~ 'no',
-                             wfh_ratio > 0 & wfh_ratio <= 0.25 ~ 'low',
+  mutate(wfh_int = case_when(wfh_ratio >= 0 & wfh_ratio <= 0.25 ~ 'low',
                              wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
                              TRUE ~ 'high')) %>%
   mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
            hh_1personE * HBO_model2$coefficients["size_one"] +
            hh_2personE * HBO_model2$coefficients["size_two"] +
-           hh_3personE * HBO_model2$coefficients["size_three"] +
-           wfh_int)
+           hh_3personE * HBO_model2$coefficients["size_three"])
 
 
 ```
 
-#Trip attractions
+```{r}
+hist(existing_zones$wfh_ratio)
+hist(hh_pers_trips$wfh_ratio)
+```
+
+
+#Trip attraction
 
 ```{r, message=F, echo=F, warning=F}
 
