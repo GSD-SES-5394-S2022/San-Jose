@@ -61,12 +61,12 @@ sanjose_hhs <- hhs %>%
 
 # the data will be aggregated at the hh level and contrasted with the number of total workers there. The variable will measure how generation of trips is affected as WFH becomes more relevant as a % at the household level.
 
-# extrapolation, althogh imperfect (from disaggregated data to aggregated data), will apply its coefficients to the % of WFH at each zone.
+# extrapolation, although myopic (from disaggregated data to aggregated data), will apply its coefficients to the % of WFH at each zone.
 
 sanjose_pers <- person %>%
   filter(HH_CBSA == "41940") %>%
-  mutate(WFH_exh = case_when(WRK_HOME == '01' | WKRMHM == '01' | WKFMHMXX > 0) ~ 1,
-         TRUE ~ 0) %>%
+  mutate(WFH_exh = case_when(WRK_HOME == '01' | WKRMHM == '01' | WKFMHMXX > 0 ~ 1,
+         TRUE ~ 0)) %>%
   select(HOUSEID, WFH_exh)
 ```
 
@@ -74,7 +74,7 @@ sanjose_pers <- person %>%
 #select trip-level variables
 ```{r, message=F, echo=F, warning=F}
 
-# we decided to still count HBW trips for WFH individuals because that is still a possibility from time to time.
+# we decided to still count HBW trips for WFH individuals because it does not necessarily means never visiting the office or making trips for work purposes.
 
 # moreover, if our assumptions are correct, this could be measured and prove a smaller generation.
 
@@ -95,9 +95,8 @@ trips_by_purpose <- trips %>%
   pivot_wider(names_from = "purpose", values_from = "n") 
 
 sanjose_pers_agg <- sanjose_pers %>%
-  group_by(HOUSEID, WFH_exh) %>%
-  summarize(n = n()) %>%
-  pivot_wider(names_from = "purpose", values_from = "n")
+  group_by(HOUSEID) %>%
+  summarize(WFH_exh = sum(WFH_exh))
 
 # #differentiate wfh household household trips from other home-based trip
 # trips_by_purpose_Claire <- trips %>% 
@@ -118,47 +117,31 @@ sanjose_pers_agg <- sanjose_pers %>%
 
 ```
 
-#join trip data to hh data
+#join trip and person data to hh data
 
 ```{r, message=F, echo=F, warning=F}
 
-#carole's original category
+# joins using households as rows
 
 hh_pers_trips <- left_join(sanjose_hhs, trips_by_purpose) %>%
   replace_na(list(HBW = 0,
                   HBO = 0,
                   NHB = 0)) %>%
   left_join(sanjose_pers_agg) %>%
-  mutate(wfh_ratio = WFH_exh / WRKCOUNT,
-         wfh_int_ = case_when(wfh_ratio == 0 ~ 'no',
-                             wfh_ratio != 0 & wfh_ratio_wfh <= 0.25 ~ 'low',
+  mutate(wfh_ratio = WFH_exh / WRKCOUNT) %>%
+  replace_na(list(wfh_ratio = 0)) %>%
+  mutate(wfh_int_ = case_when(wfh_ratio == 0 ~ 'no',
+                             wfh_ratio != 0 & wfh_ratio <= 0.25 ~ 'low',
                              wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
                              TRUE ~ 'high'))
-
-#our version
-# 
-# hh_trips_Claire <- left_join(sanjose_hhs, trips_by_purpose_Claire) %>%
-#   replace_na(list(HBW = 0,
-#                   HBO = 0,
-#                   WFHB = 0,
-#                   NHB = 0))
-
-
 ```
 
 #CREATE SURVEY OBJECT
 
 ```{r, message=F, echo=F, warning=F}
 
-#carole's original category
-
 svy_trips <- hh_pers_trips %>%
   as_survey(weights = WTHHFIN)
-
-#our version
-
-# svy_trips <- hh_trips_Claire %>%
-#   as_survey(weights = WTHHFIN)
 
 ```
 
