@@ -51,16 +51,22 @@ sanjose_hhs <- hhs %>%
                               TRUE ~ "four_plus")) %>%
   mutate(zero_veh_ = (HHVEHCNT == 0)) %>%
   replace_with_na(list(inc_quint_ = "NA")) %>%
-  select(HOUSEID, zero_veh_, size_, inc_quint_, WTHHFIN) 
-#need to see what other variables?
+  select(HOUSEID, zero_veh_, size_, inc_quint_, WRKCOUNT, WTHHFIN) # adding no. of workers at the hh
+
 ```
 
 #select person-level variables
-```{r}
+```{r, message=F, echo=F, warning=F}
+# workers who work from home, have the option to do so, or have effectively worked from home more than one day during that month, will be considered.
+
+# the data will be aggregated at the hh level and contrasted with the number of total workers there. The variable will measure how generation of trips is affected as WFH becomes more relevant as a % at the household level.
+
+# extrapolation, althogh imperfect (from disaggregated data to aggregated data), will apply its coefficients to the % of WFH at each zone.
+
 sanjose_pers <- person %>%
   filter(HH_CBSA == "41940") %>%
   mutate(WFH_exh = case_when(WRK_HOME == '01' | WKRMHM == '01' | WKFMHMXX > 0) ~ 1,
-         TRUE ~ 0) %>% # workers who work from home, have the option to do so, or have effectively worked from home more than one day during that month
+         TRUE ~ 0) %>%
   select(HOUSEID, WFH_exh)
 ```
 
@@ -68,9 +74,12 @@ sanjose_pers <- person %>%
 #select trip-level variables
 ```{r, message=F, echo=F, warning=F}
 
-#carole's original category
-trips_by_purpose_CAROLE <- trips %>% 
-  filter(HH_CBSA == "15380") %>%
+# we decided to still count HBW trips for WFH individuals because that is still a possibility from time to time.
+
+# moreover, if our assumptions are correct, this could be measured and prove a smaller generation.
+
+trips_by_purpose <- trips %>% 
+  filter(HH_CBSA == "41940") %>%
   select(HOUSEID, WHYFROM, WHYTO) %>%
   mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
                                 WHYTO == "02" ~ TRUE,
@@ -85,22 +94,27 @@ trips_by_purpose_CAROLE <- trips %>%
   summarize(n = n()) %>%
   pivot_wider(names_from = "purpose", values_from = "n") 
 
-#differentiate wfh household household trips from other home-based trip
-trips_by_purpose_Claire <- trips %>% 
-  filter(HH_CBSA == "41940") %>%
-  select(HOUSEID, WHYFROM, WHYTO) %>%
-  mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
-                                WHYFROM == "01" ~ TRUE,
-                                TRUE ~ FALSE)) %>%
-  mutate(work = ifelse(WHYTO == "03" | WHYFROM == "03", TRUE, FALSE)) %>%
-  mutate(wfh = ifelse(WHYTO == "02" | WHYFROM == "02", TRUE, FALSE)) %>%
-  mutate(purpose = case_when(home_based & work ~ "HBW",
-                            home_based ~ "HBO",
-                            wfh ~ "WFHB",
-                            TRUE ~ "NHB")) %>%
-  group_by(HOUSEID, purpose) %>%
+sanjose_pers_agg <- sanjose_pers %>%
+  group_by(HOUSEID, WFH_exh) %>%
   summarize(n = n()) %>%
-  pivot_wider(names_from = "purpose", values_from = "n") 
+  pivot_wider(names_from = "purpose", values_from = "n")
+
+# #differentiate wfh household household trips from other home-based trip
+# trips_by_purpose_Claire <- trips %>% 
+#   filter(HH_CBSA == "41940") %>%
+#   select(HOUSEID, WHYFROM, WHYTO) %>%
+#   mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
+#                                 WHYFROM == "01" ~ TRUE,
+#                                 TRUE ~ FALSE)) %>%
+#   mutate(work = ifelse(WHYTO == "03" | WHYFROM == "03", TRUE, FALSE)) %>%
+#   mutate(wfh = ifelse(WHYTO == "02" | WHYFROM == "02", TRUE, FALSE)) %>%
+#   mutate(purpose = case_when(home_based & work ~ "HBW",
+#                             home_based ~ "HBO",
+#                             wfh ~ "WFHB",
+#                             TRUE ~ "NHB")) %>%
+#   group_by(HOUSEID, purpose) %>%
+#   summarize(n = n()) %>%
+#   pivot_wider(names_from = "purpose", values_from = "n") 
 
 ```
 
@@ -110,18 +124,24 @@ trips_by_purpose_Claire <- trips %>%
 
 #carole's original category
 
-hh_trips_Carole <- left_join(sanjose_hhs, trips_by_purpose_CAROLE) %>%
+hh_pers_trips <- left_join(sanjose_hhs, trips_by_purpose) %>%
   replace_na(list(HBW = 0,
                   HBO = 0,
-                  NHB = 0))
+                  NHB = 0)) %>%
+  left_join(sanjose_pers_agg) %>%
+  mutate(ratio_wfh = WFH_exh / WRKCOUNT,
+         wfh_int_ = case_when(ratio_wfh = 0 ~ 'no',
+                             ratio_wfh != 0 & ratio_wfh <= 0.25 ~ 'low',
+                             ratio_wfh <= 0.5 & ratio_wfh > 0.25 ~ 'mid',
+                             TRUE ~ 'high'))
 
 #our version
-
-hh_trips_Claire <- left_join(sanjose_hhs, trips_by_purpose_Claire) %>%
-  replace_na(list(HBW = 0,
-                  HBO = 0,
-                  WFHB = 0,
-                  NHB = 0))
+# 
+# hh_trips_Claire <- left_join(sanjose_hhs, trips_by_purpose_Claire) %>%
+#   replace_na(list(HBW = 0,
+#                   HBO = 0,
+#                   WFHB = 0,
+#                   NHB = 0))
 
 
 ```
@@ -132,23 +152,20 @@ hh_trips_Claire <- left_join(sanjose_hhs, trips_by_purpose_Claire) %>%
 
 #carole's original category
 
-svy_trips <- hh_trips_Carole %>%
+svy_trips <- hh_pers_trips %>%
   as_survey(weights = WTHHFIN)
 
 #our version
 
-svy_trips <- hh_trips_Claire %>%
-  as_survey(weights = WTHHFIN)
+# svy_trips <- hh_trips_Claire %>%
+#   as_survey(weights = WTHHFIN)
 
 ```
 
-#Estimate a house-hold level regression model
+#Estimate household-level regression models
 
 ```{r, message=F, echo=F, warning=F}
-
-#carole's original category
-
-HBO_model1 <- svyglm(HBO ~ zero_veh_ + size_ + inc_quint_, svy_trips)
+HBO_model1 <- svyglm(HBO ~ zero_veh_ + size_ + inc_quint_, wfh_int_, svy_trips)
 
 export_summs(HBO_model1, 
              error_pos = "right", 
@@ -157,26 +174,70 @@ export_summs(HBO_model1,
 
 #remote non-statistically significant var (zero_veh_hh & quantile)
 
-HBO_model2 <- svyglm(HBO ~size_, svy_trips)
-
-export_summs(HBO_model1, HBO_model2,
-             error_pos = "right", 
-             error_format = "(p = {p.value})",
-             model.names = c("Full model", "Reduced model"))
+# HBO_model2 <- svyglm(HBO ~size_, svy_trips)
+# 
+# export_summs(HBO_model1, HBO_model2,
+#              error_pos = "right", 
+#              error_format = "(p = {p.value})",
+#              model.names = c("Full model", "Reduced model"))
 ```
 
+```{r, message=F, echo=F, warning=F}
+HBW_model1 <- svyglm(HBW ~ zero_veh_ + size_ + inc_quint_, wfh_int_, svy_trips)
+
+export_summs(HBW_model1, 
+             error_pos = "right", 
+             error_format = "(p = {p.value})",
+             model.names = "Full model")
+
+#remote non-statistically significant var (zero_veh_hh & quantile)
+
+# HBW_model2 <- svyglm(HBW ~size_, svy_trips)
+# 
+# export_summs(HBW_model1, HBW_model2,
+#              error_pos = "right", 
+#              error_format = "(p = {p.value})",
+#              model.names = c("Full model", "Reduced model"))
+
 #Apply trip production model to zonal data
+```
 
 ```{r, message=F, echo=F, warning=F}
+NHB_model1 <- svyglm(NHB ~ zero_veh_ + size_ + inc_quint_, wfh_int_, svy_trips)
 
+export_summs(NHB_model1, 
+             error_pos = "right", 
+             error_format = "(p = {p.value})",
+             model.names = "Full model")
+
+#remote non-statistically significant var (zero_veh_hh & quantile)
+
+# NHB_model2 <- svyglm(NHB ~size_, svy_trips)
+# 
+# export_summs(NHB_model1, NHB_model2,
+#              error_pos = "right", 
+#              error_format = "(p = {p.value})",
+#              model.names = c("Full model", "Reduced model"))
+
+#Apply trip production model to zonal data
+```
+
+```{r, message=F, echo=F, warning=F}
+## TBD
 existing_zones <- here("existing",
                        "data",
                        "existing_sanjose.csv") %>%
   read_csv() %>%
+  mutate(wfh_ratio = total_wfhE / total_workerE) %>%
+  mutate(wfh_int = case_when(wfh_ratio = 0 ~ 'no',
+                             wfh_ratio > 0 & wfh_ratio <= 0.25 ~ 'low',
+                             wfh_ratio <= 0.5 & wfh_ratio > 0.25 ~ 'mid',
+                             TRUE ~ 'high')) %>%
   mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
-                    hh_1personE * HBO_model2$coefficients["size_one"] +
-                    hh_2personE * HBO_model2$coefficients["size_two"] +
-                    hh_3personE * HBO_model2$coefficients["size_three"])
+           hh_1personE * HBO_model2$coefficients["size_one"] +
+           hh_2personE * HBO_model2$coefficients["size_two"] +
+           hh_3personE * HBO_model2$coefficients["size_three"] +
+           wfh_int)
 
 
 ```
