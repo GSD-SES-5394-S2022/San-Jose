@@ -22,6 +22,7 @@ temp <- tempfile()
 download.file("https://nhts.ornl.gov/assets/2016/download/csv.zip", temp)
 
 trips <- read_csv(unz(temp, "trippub.csv"))
+person <- read_csv(unz(temp, "perpub.csv"))
 hhs <- read_csv(unz(temp, "hhpub.csv"))
 
 unlink(temp)
