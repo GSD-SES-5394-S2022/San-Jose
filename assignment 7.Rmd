@@ -214,8 +214,10 @@ existing_zones <- here("existing",
   mutate(wfh_ratio = total_wfhE / total_workerE) %>%
   mutate(wfh_int = case_when(wfh_ratio <= 0.05 ~ 'low',
                              wfh_ratio <= 0.075 & wfh_ratio > 0.05 ~ 'mid',
-                             TRUE ~ 'high')) %>%
-  # (see brackets justification below)
+                             TRUE ~ 'high'))
+# (see brackets justification below)
+
+existing_zones <- existing_zones %>%
   mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
            hh_1personE * HBO_model2$coefficients["size_one"] +
            hh_2personE * HBO_model2$coefficients["size_two"] +
@@ -257,7 +259,9 @@ alternative_zones <- here("alternative",
   mutate(wfh_ratio = alt_wfh / total_workerE) %>%
   mutate(wfh_int = case_when(wfh_ratio <= 0.05 ~ 'low',
                              wfh_ratio <= 0.075 & wfh_ratio > 0.05 ~ 'mid',
-                             TRUE ~ 'high')) %>%
+                             TRUE ~ 'high'))
+
+alternative_zones <- alternative_zones %>%
   mutate(hbo_prod = total_hhsE * HBO_model2$coefficients["(Intercept)"] +
            hh_1personE * HBO_model2$coefficients["size_one"] +
            hh_2personE * HBO_model2$coefficients["size_two"] +
@@ -285,8 +289,7 @@ alternative_zones <- here("alternative",
 #Trip attraction
 
 ```{r, message=F, echo=F, warning=F}
-# TBD
-#carole's original category
+# existing conditions
 
 existing_zones <- existing_zones %>%
   replace_na(list(basic_jobs = 0,
@@ -295,7 +298,26 @@ existing_zones <- existing_zones %>%
   mutate(hbo_attr = 0.7 * total_hhsE +
                     0.7 * basic_jobs +
                     8.4 * retail_jobs +
-                    3.5 * service_jobs) #workers? jobs??
+                    3.5 * service_jobs,
+         hbw_attr = 1.2 * total_jobs,
+         nhb_attr = 1.4 * total_hhsE +
+                    6.9 * retail_jobs +
+                    0.9 * service_jobs)
+
+# alternative conditions
+
+alternative_zones <- alternative_zones %>%
+  replace_na(list(basic_jobs = 0,
+                  retail_jobs = 0, 
+                  service_jobs = 0)) %>%
+  mutate(hbo_attr = 0.7 * total_hhsE +
+                    0.7 * basic_jobs +
+                    8.4 * retail_jobs +
+                    3.5 * alt_service_jobs,
+         hbw_attr = 1.2 * (total_jobs - jobs_change),
+         nhb_attr = 1.4 * total_hhsE +
+                    6.9 * retail_jobs +
+                    0.9 * alt_service_jobs)
 
 ```
 
@@ -325,9 +347,17 @@ trip_end_summary <- tibble(Purpose = c("HBO"),
                                             sum(existing_zones$hbo_prod)))
 
 kable(trip_end_summary, format.args = list(big.mark = ","))
-
-## SAVE DATA!!
 ```
 
 #create some chloropleth maps and/or dot-density maps
+
+# save data
+```{r, message=F, echo=F, warning=F}
+write_csv(existing_zones, file = here("existing", 
+                                      "data",
+                                      "existing_sanjose.csv"))
+write_csv(alternative_zones, file = here("alternative", 
+                                      "data",
+                                      "alternative_sanjose.csv"))
+```
 
