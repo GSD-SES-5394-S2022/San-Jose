@@ -266,22 +266,22 @@ alternative_zones <- alternative_zones %>%
            hh_1personE * HBO_model2$coefficients["size_one"] +
            hh_2personE * HBO_model2$coefficients["size_two"] +
            hh_3personE * HBO_model2$coefficients["size_three"] +
-           total_hhsE * if (existing_zones$wfh_int == 'mid') {HBO_model2$coefficients["wfh_int_mid"]}
-         else if (existing_zones$wfh_int == 'high') {HBO_model2$coefficients["wfh_int_high"]}
+           total_hhsE * if (alternative_zones$wfh_int == 'mid') {HBO_model2$coefficients["wfh_int_mid"]}
+         else if (alternative_zones$wfh_int == 'high') {HBO_model2$coefficients["wfh_int_high"]}
          else {0}) %>%
   mutate(hbw_prod = total_hhsE * HBW_model2$coefficients["(Intercept)"] +
            hh_1personE * HBW_model2$coefficients["size_one"] +
            hh_2personE * HBW_model2$coefficients["size_two"] +
            hh_3personE * HBW_model2$coefficients["size_three"] +
-           total_hhsE * if (existing_zones$wfh_int == 'mid') {HBW_model2$coefficients["wfh_int_mid"]}
-         else if (existing_zones$wfh_int == 'high') {HBW_model2$coefficients["wfh_int_high"]}
+           total_hhsE * if (alternative_zones$wfh_int == 'mid') {HBW_model2$coefficients["wfh_int_mid"]}
+         else if (alternative_zones$wfh_int == 'high') {HBW_model2$coefficients["wfh_int_high"]}
          else {0}) %>%
   mutate(nhb_prod = total_hhsE * NHB_model2$coefficients["(Intercept)"] +
            hh_1personE * NHB_model2$coefficients["size_one"] +
            hh_2personE * NHB_model2$coefficients["size_two"] +
            hh_3personE * NHB_model2$coefficients["size_three"] +
-           total_hhsE * if (existing_zones$wfh_int == 'mid') {NHB_model2$coefficients["wfh_int_mid"]}
-         else if (existing_zones$wfh_int == 'high') {NHB_model2$coefficients["wfh_int_high"]}
+           total_hhsE * if (alternative_zones$wfh_int == 'mid') {NHB_model2$coefficients["wfh_int_mid"]}
+         else if (alternative_zones$wfh_int == 'high') {NHB_model2$coefficients["wfh_int_high"]}
          else {0})
 
 ```
@@ -324,30 +324,57 @@ alternative_zones <- alternative_zones %>%
 #Balancing
 
 ```{r, message=F, echo=F, warning=F}
-# TBD
-#carole's original category
 
-trip_end_summary <- tibble(Purpose = c("HBO"),
-                           Productions = c(sum(existing_zones$hbo_prod)),
-                           Attractions = c(sum(existing_zones$hbo_attr)),
-                           Difference = c(sum(existing_zones$hbo_attr) - 
-                                            sum(existing_zones$hbo_prod)))
+# checking for initial differences
+
+trip_end_summary <- tibble(Purpose = c("ex_HBO", "ex_HBW", "ex_NHB", "alt_HBO", "alt_HBW", "alt_NHB"),
+                           Productions = c(sum(existing_zones$hbo_prod), sum(existing_zones$hbw_prod), sum(existing_zones$nhb_prod), sum(alternative_zones$hbo_prod), sum(alternative_zones$hbw_prod), sum(alternative_zones$nhb_prod)),
+                           Attractions = c(sum(existing_zones$hbo_attr), sum(existing_zones$hbw_attr), sum(existing_zones$nhb_attr), sum(alternative_zones$hbo_attr), sum(alternative_zones$hbw_attr), sum(alternative_zones$nhb_attr)),
+                           Difference = c(sum(existing_zones$hbo_attr) -                    sum(existing_zones$hbo_prod),
+                                          sum(existing_zones$hbw_attr) - sum(existing_zones$hbw_prod),
+                                          sum(existing_zones$nhb_attr) - sum(existing_zones$nhb_prod),
+                                          sum(alternative_zones$hbo_attr) -                 sum(alternative_zones$hbo_prod),
+                                          sum(alternative_zones$hbw_attr) - sum(alternative_zones$hbw_prod),
+                                          sum(alternative_zones$nhb_attr) - sum(alternative_zones$nhb_prod)))
 
 kable(trip_end_summary, format.args = list(big.mark = ","))
+
+# balancing existing conditions
 
 existing_zones <- existing_zones %>%
   mutate(hbo_attr_bal = hbo_attr * 
-           sum(existing_zones$hbo_prod) / sum(existing_zones$hbo_attr))
+           sum(existing_zones$hbo_prod) / sum(existing_zones$hbo_attr),
+         hbw_attr_bal = hbw_attr * 
+           sum(existing_zones$hbw_prod) / sum(existing_zones$hbw_attr),
+         nhb_attr_bal = nhb_attr * 
+           sum(existing_zones$nhb_prod) / sum(existing_zones$nhb_attr))
 
-#check
-trip_end_summary <- tibble(Purpose = c("HBO"),
-                           Productions = c(sum(existing_zones$hbo_prod)),
-                           Attractions = c(sum(existing_zones$hbo_attr_bal)),
-                           Difference = c(sum(existing_zones$hbo_attr_bal) - 
-                                            sum(existing_zones$hbo_prod)))
+# balancing alternative conditions
 
-kable(trip_end_summary, format.args = list(big.mark = ","))
+alternative_zones <- alternative_zones %>%
+  mutate(hbo_attr_bal = hbo_attr * 
+           sum(alternative_zones$hbo_prod) / sum(alternative_zones$hbo_attr),
+         hbw_attr_bal = hbw_attr * 
+           sum(alternative_zones$hbw_prod) / sum(alternative_zones$hbw_attr),
+         nhb_attr_bal = nhb_attr * 
+           sum(alternative_zones$nhb_prod) / sum(alternative_zones$nhb_attr))
+
+#checking after balancing
+
+trip_end_summary_bal <- tibble(Purpose = c("ex_HBO", "ex_HBW", "ex_NHB", "alt_HBO", "alt_HBW", "alt_NHB"),
+                           Productions = c(sum(existing_zones$hbo_prod), sum(existing_zones$hbw_prod), sum(existing_zones$nhb_prod), sum(alternative_zones$hbo_prod), sum(alternative_zones$hbw_prod), sum(alternative_zones$nhb_prod)),
+                           Attractions = c(sum(existing_zones$hbo_attr_bal), sum(existing_zones$hbw_attr_bal), sum(existing_zones$nhb_attr_bal), sum(alternative_zones$hbo_attr_bal), sum(alternative_zones$hbw_attr_bal), sum(alternative_zones$nhb_attr_bal)),
+                           Difference = c(sum(existing_zones$hbo_attr_bal) -                    sum(existing_zones$hbo_prod),
+                                          sum(existing_zones$hbw_attr_bal) - sum(existing_zones$hbw_prod),
+                                          sum(existing_zones$nhb_attr_bal) - sum(existing_zones$nhb_prod),
+                                          sum(alternative_zones$hbo_attr_bal) -                 sum(alternative_zones$hbo_prod),
+                                          sum(alternative_zones$hbw_attr_bal) - sum(alternative_zones$hbw_prod),
+                                          sum(alternative_zones$nhb_attr_bal) - sum(alternative_zones$nhb_prod)))
+
+kable(trip_end_summary_bal, format.args = list(big.mark = ","))
 ```
+
+Interpretation of results so far: more working from home would increase the number of non-work related trips from home (HBO), which resonates with the flexibility these workers gain. Home-based trips to work (HBW) decrease, which is the expected outcome by definition, following the logical trend. Non-home based trips (NHB) should a priori decrease too, given that the typical example would be a trip generated at work (e.g., lunch). However, NHB trips increase in a large proportion, and possibly only sophisticated patterns of trip chaining could explain that intuitively. Overall, the MSA would incorporate 1.1 M trips, posing a question on how many benefits could be expected from WFH if 'removing commuters from the streets' in turn propagates their generation of other trips more than proportionately.
 
 #create some chloropleth maps and/or dot-density maps
 
