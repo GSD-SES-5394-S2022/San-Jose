@@ -14,6 +14,9 @@ library(naniar)
 library(jtools)
 library(knitr)
 library(sf)
+library(RColorBrewer)
+library(viridis) 
+
 ```
 
 
@@ -417,8 +420,13 @@ existing_geo <- here("zones",
 existing_geo <- existing_geo %>%
   left_join(existing_zones, by = "GEOID")
 
+#palettes
+map_color<- brewer.pal(5,"BuPu")
+
+
 ggplot(existing_geo) +
   geom_sf(aes(fill = wfh_int), color = NA) +
+  scale_fill_manual(values = map_color) +
   theme_void()
 
 
