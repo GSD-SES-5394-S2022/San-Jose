@@ -413,6 +413,8 @@ kable(trip_end_summary_bal, format.args = list(big.mark = ","))
 
 # Visualizations
 
+## Dot Density
+
 ```{r}
 existing_geo <- here("zones",
                      "zones_sanjose.geojson") %>%
@@ -446,9 +448,9 @@ ex_hbo_prod <- dotdensity(existing_geo, "hbo_prod", 3000,
                           "prod", "Existing HBO Production")
 alt_hbo_prod <- dotdensity(alternative_geo, "hbo_prod", 3000, 
                            "prod", "Alternative HBO Production")
-ex_hbo_attr <- dotdensity(existing_geo, "hbo_attr", 3000, 
+ex_hbo_attr <- dotdensity(existing_geo, "hbo_attr_bal", 3000, 
                           "attr", "Existing HBO Attraction")
-alt_hbo_attr <- dotdensity(alternative_geo, "hbo_attr", 3000, 
+alt_hbo_attr <- dotdensity(alternative_geo, "hbo_attr_bal", 3000, 
                            "attr", "Alternative HBO Attraction")
 
 #home-based work
@@ -456,9 +458,9 @@ ex_hbw_prod <- dotdensity(existing_geo, "hbw_prod", 3000,
                           "prod", "Existing HBW Production")
 alt_hbw_prod <- dotdensity(alternative_geo, "hbw_prod", 3000, 
                            "prod", "Alternative HBW Production")
-ex_hbw_attr <- dotdensity(existing_geo, "hbw_attr", 3000, 
+ex_hbw_attr <- dotdensity(existing_geo, "hbw_attr_bal", 3000, 
                           "attr", "Existing HBW Attraction")
-alt_hbw_attr <- dotdensity(alternative_geo, "hbw_attr", 3000, 
+alt_hbw_attr <- dotdensity(alternative_geo, "hbw_attr_bal", 3000, 
                            "attr", "Alternative HBW Attraction")
 
 #non-home based
@@ -466,9 +468,9 @@ ex_nhb_prod <- dotdensity(existing_geo, "nhb_prod", 3000,
                           "prod", "Existing NHB Production")
 alt_nhb_prod <- dotdensity(alternative_geo, "nhb_prod", 3000, 
                            "prod", "Alternative NHB Production")
-ex_nhb_attr <- dotdensity(existing_geo, "nhb_attr", 3000, 
+ex_nhb_attr <- dotdensity(existing_geo, "nhb_attr_bal", 3000, 
                           "attr", "Existing NHB Attraction")
-alt_nhb_attr <- dotdensity(alternative_geo, "nhb_attr", 3000, 
+alt_nhb_attr <- dotdensity(alternative_geo, "nhb_attr_bal", 3000, 
                            "attr", "Alternative NHB Attraction")
 
 
@@ -484,44 +486,36 @@ ex_nhb_prod
 alt_nhb_prod
 ex_nhb_attr
 alt_nhb_attr
+```
 
+## Chloropleths
+
+```{r}
 
 #palettes
 map_color<- brewer.pal(9,"BuPu")
 map_color2 <- brewer.pal(10, "PiYG")
-
-
-
-ggplot(existing_geo) +
-  geom_sf(aes(fill = wfh_level), color = NA) +
-  scale_fill_manual(name = "WFH Ratio",
-                    values = map_color, 
-                    labels = c("Low", "Medium", "High")) +
-  theme_void()
-
-ggplot(existing_geo) +
-  geom_sf(color = "white", fill = "black") +
-  geom_sf(data = hbo_prod_dot, color = "purple", size = .7, alpha = .3) +
-  geom_sf(data = hbo_attr_dot, color = "green", size = .6, alpha = .1) +
-  theme_void()
-
 neg_pal <- c("#7a0177",
              "#c51b8a",
              "#f768a1",
              "#fbb4b9",
              "#feebe2")
 
+split_pal <- brewer.pal(9, "RdYlGn")
+
+
+
 # chloropleths for existing/alt differences
 sj_trips <- as.data.frame(existing_geo[, c(1:2, 55:66)]) %>%
   left_join(as.data.frame(alternative_geo[, c(1:2, 61:73)]), by = "GEOID") %>%
   st_as_sf() %>%
   mutate(hbo_prod = round((hbo_prod.y - hbo_prod.x) / hbo_prod.x * 100),
-         hbo_attr = round((hbo_attr.y - hbo_attr.x) / hbo_attr.x * 100),
+         hbo_attr = round((hbo_attr_bal.y - hbo_attr_bal.x) / hbo_attr_bal.x * 100),
          hbw_prod = round((hbw_prod.y - hbw_prod.x) / hbw_prod.x * 100),
-         hbw_attr = round((hbw_attr.y - hbw_attr.x) / hbw_attr.x * 100),
+         hbw_attr = round((hbw_attr_bal.y - hbw_attr_bal.x) / hbw_attr_bal.x * 100),
          nhb_prod = round((nhb_prod.y - nhb_prod.x) / nhb_prod.x * 100),
-         nhb_attr = round((nhb_attr.y - nhb_attr.x) / nhb_attr.x * 100),
-         wfh_ratio = round((wfh_ratio.y - wfh_ratio.x) / wfh_ratio.x * 100)) %>%
+         nhb_attr = round((nhb_attr_bal.y - nhb_attr_bal.x) / nhb_attr_bal.x * 100),
+         wfh_ratio_alt = round(wfh_ratio.y, 2)) %>%
   mutate(hbo_prod = ifelse(hbo_prod > 100, 150, hbo_prod),
          hbo_attr = ifelse(hbo_attr > 100, 150, hbo_attr),
          hbw_prod = ifelse(hbw_prod > 100, 150, hbw_prod),
@@ -530,20 +524,26 @@ sj_trips <- as.data.frame(existing_geo[, c(1:2, 55:66)]) %>%
          nhb_attr = ifelse(nhb_attr > 100, 150, nhb_attr))
 
 chlormap <- function(df, variable, pal = map_color, title = NULL){
-  if(max(df[,variable][[1]] <= 0)){
+  
+  if(max(df[,variable][[1]]) > 0 & min(df[,variable][[1]]) <= 0){
   ggplot(df) +
     geom_sf(aes(fill = df[,variable][[1]]), alpha = .8, color = NA) +
-      scale_fill_gradientn(name = title,
-                           colors = neg_pal) +
+      scale_fill_gradient2(name = title
+                           ) +
+        theme_void()
+  } else{
+  if(max(df[,variable][[1]]) <= 0){
+  ggplot(df) +
+    geom_sf(aes(fill = df[,variable][[1]]), alpha = .8, color = NA) +
+      scale_fill_gradient2(name = title) +
         theme_void()
     } else{
       ggplot(df) +
         geom_sf(aes(fill = df[,variable][[1]]), alpha = .8, color = NA) +
-        scale_fill_gradientn(name = title,
-                             colors = brewer.pal(9, "BuGn")) +
+        scale_fill_gradient2(name = title) +
         theme_void()
-    } 
-
+    }
+}
 }
 
 
@@ -567,8 +567,13 @@ nhb_prod_chlor <- chlormap(sj_trips, "nhb_prod",
 nhb_attr_chlor <- chlormap(sj_trips, "nhb_attr",
                            title = "% Change in NHB Attractions\nExisting to Alternative\n")
 
-wfh_ratio_chlor <- chlormap(sj_trips, "wfh_ratio",
-                            title = "% Change in WFH Ratio\nExisting to Alternative\n")
+
+
+wfh_ratio_chlor <- ggplot(sj_trips) +
+  geom_sf(aes(fill = wfh_ratio_alt), color = NA) +
+  scale_fill_gradient(low = "white", high = "black", 
+                      name = "WFH Ratio\nAlternative Condition") +
+  theme_void()
 
 hbo_prod_chlor
 hbo_attr_chlor
@@ -578,12 +583,13 @@ nhb_prod_chlor
 nhb_attr_chlor
 wfh_ratio_chlor
 
-ggplot(sj_trips) +
-  geom_sf(aes(fill = wfh_level), color = NA) +
-  scale_fill_manual(name = "WFH Ratio",
-                    values = map_color, 
-                    labels = c("Low", "Medium", "High")) +
-  theme_void()
+ggsave("graphics/hbo_productions_changes.jpeg", hbo_prod_chlor, device = "jpeg")
+ggsave("graphics/hbo_attractions_changes.jpeg", hbo_attr_chlor, device = "jpeg")
+ggsave("graphics/hbw_productions_changes.jpeg", hbw_prod_chlor, device = "jpeg")
+ggsave("graphics/hbw_attractions_changes.jpeg", hbw_attr_chlor, device = "jpeg")
+ggsave("graphics/nhb_productions_changes.jpeg", nhb_prod_chlor, device = "jpeg")
+ggsave("graphics/nhb_attractions_changes.jpeg", nhb_attr_chlor, device = "jpeg")
+ggsave("graphics/wfh_ratio_alt.jpeg", wfh_ratio_chlor, device = "jpeg")
 
 
 ```
