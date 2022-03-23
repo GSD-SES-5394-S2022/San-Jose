@@ -487,7 +487,7 @@ alt_nhb_attr
 
 
 #palettes
-map_color<- brewer.pal(5,"BuPu")
+map_color<- brewer.pal(9,"BuPu")
 map_color2 <- brewer.pal(10, "PiYG")
 
 
@@ -505,16 +505,23 @@ ggplot(existing_geo) +
   geom_sf(data = hbo_attr_dot, color = "green", size = .6, alpha = .1) +
   theme_void()
 
+neg_pal <- c("#7a0177",
+             "#c51b8a",
+             "#f768a1",
+             "#fbb4b9",
+             "#feebe2")
 
 # chloropleths for existing/alt differences
-sj_trips <- existing_geo[, c(1:2, 55:66)] %>%
-  st_join(alternative_geo[, c(1:2, 61:73)]) %>%
+sj_trips <- as.data.frame(existing_geo[, c(1:2, 55:66)]) %>%
+  left_join(as.data.frame(alternative_geo[, c(1:2, 61:73)]), by = "GEOID") %>%
+  st_as_sf() %>%
   mutate(hbo_prod = round((hbo_prod.y - hbo_prod.x) / hbo_prod.x * 100),
          hbo_attr = round((hbo_attr.y - hbo_attr.x) / hbo_attr.x * 100),
          hbw_prod = round((hbw_prod.y - hbw_prod.x) / hbw_prod.x * 100),
          hbw_attr = round((hbw_attr.y - hbw_attr.x) / hbw_attr.x * 100),
          nhb_prod = round((nhb_prod.y - nhb_prod.x) / nhb_prod.x * 100),
-         nhb_attr = round((nhb_attr.y - nhb_attr.x) / nhb_attr.x * 100)) %>%
+         nhb_attr = round((nhb_attr.y - nhb_attr.x) / nhb_attr.x * 100),
+         wfh_ratio = round((wfh_ratio.y - wfh_ratio.x) / wfh_ratio.x * 100)) %>%
   mutate(hbo_prod = ifelse(hbo_prod > 100, 150, hbo_prod),
          hbo_attr = ifelse(hbo_attr > 100, 150, hbo_attr),
          hbw_prod = ifelse(hbw_prod > 100, 150, hbw_prod),
@@ -522,38 +529,46 @@ sj_trips <- existing_geo[, c(1:2, 55:66)] %>%
          nhb_prod = ifelse(nhb_prod > 100, 150, nhb_prod),
          nhb_attr = ifelse(nhb_attr > 100, 150, nhb_attr))
 
-chlormap <- function(df, variable, pal = map_color2, title = NULL){
+chlormap <- function(df, variable, pal = map_color, title = NULL){
+  if(max(df[,variable][[1]] <= 0)){
   ggplot(df) +
-    geom_sf(aes(fill = df[,variable][[1]]), alpha = .7, color = NA) +
-    scale_fill_gradientn(name = title,
-                         colors = pal,
-                         breaks = seq(-150, 150, by = 50),
-                         labels = c("","",
-                                    "50% decrease",
-                                    "No change", "",
-                                    "100% increase",
-                                    "More than 100% increase")) +
-    theme_void()
+    geom_sf(aes(fill = df[,variable][[1]]), alpha = .8, color = NA) +
+      scale_fill_gradientn(name = title,
+                           colors = neg_pal) +
+        theme_void()
+    } else{
+      ggplot(df) +
+        geom_sf(aes(fill = df[,variable][[1]]), alpha = .8, color = NA) +
+        scale_fill_gradientn(name = title,
+                             colors = brewer.pal(9, "BuGn")) +
+        theme_void()
+    } 
 
 }
 
+
+
+
 hbo_prod_chlor <- chlormap(sj_trips, "hbo_prod",
-                           title = "Change in HBO Production\nExisting to Alternative\n")
+                           title = "% Change in HBO Production\nExisting to Alternative\n")
 
 hbo_attr_chlor <- chlormap(sj_trips, "hbo_attr",
-                           title = "Change in HBO Attractions\nExisting to Alternative\n")
+                           title = "% Change in HBO Attractions\nExisting to Alternative\n")
 
 hbw_prod_chlor <- chlormap(sj_trips, "hbw_prod",
-                           title = "Change in HBW Production\nExisting to Alternative\n")
+                           title = "% Change in HBW Production\nExisting to Alternative\n")
 
 hbw_attr_chlor <- chlormap(sj_trips, "hbw_attr",
-                           title = "Change in HBW Attractions\nExisting to Alternative\n")
+                           title = "% Change in HBW Attractions\nExisting to Alternative\n")
 
 nhb_prod_chlor <- chlormap(sj_trips, "nhb_prod",
-                           title = "Change in NHB Production\nExisting to Alternative\n")
+                           title = "% Change in NHB Production\nExisting to Alternative\n")
 
 nhb_attr_chlor <- chlormap(sj_trips, "nhb_attr",
-                           title = "Change in NHB Attractions\nExisting to Alternative\n")
+                           title = "% Change in NHB Attractions\nExisting to Alternative\n")
+
+wfh_ratio_chlor <- chlormap(sj_trips, "wfh_ratio",
+                            title = "% Change in WFH Ratio\nExisting to Alternative\n")
 
 hbo_prod_chlor
 hbo_attr_chlor
@@ -561,7 +576,14 @@ hbw_prod_chlor
 hbw_attr_chlor
 nhb_prod_chlor
 nhb_attr_chlor
+wfh_ratio_chlor
 
+ggplot(sj_trips) +
+  geom_sf(aes(fill = wfh_level), color = NA) +
+  scale_fill_manual(name = "WFH Ratio",
+                    values = map_color, 
+                    labels = c("Low", "Medium", "High")) +
+  theme_void()
 
 
 ```
