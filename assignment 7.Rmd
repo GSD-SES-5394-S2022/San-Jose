@@ -16,6 +16,7 @@ library(knitr)
 library(sf)
 library(RColorBrewer)
 library(viridis) 
+library(gridExtra)
 
 ```
 
@@ -415,19 +416,151 @@ kable(trip_end_summary_bal, format.args = list(big.mark = ","))
 ```{r}
 existing_geo <- here("zones",
                      "zones_sanjose.geojson") %>%
-  st_read()
+  st_read() %>%
+  left_join(existing_zones, by = "GEOID") %>%
+  mutate(wfh_level = case_when(wfh_int == "low" ~ "0",
+                               wfh_int == "mid" ~ "1",
+                               wfh_int == "high" ~ "2"))
 
-existing_geo <- existing_geo %>%
-  left_join(existing_zones, by = "GEOID")
+alternative_geo <- here("zones",
+                        "zones_sanjose.geojson") %>%
+  st_read() %>%
+  left_join(alternative_zones, by = "GEOID") %>%
+  mutate(wfh_level = case_when(wfh_int == "low" ~ "0",
+                               wfh_int == "mid" ~ "1",
+                               wfh_int == "high" ~ "2"))
+
+dotdensity <- function(df, variable, denominator, type, title){
+  dot <- st_sample(df, size = ceiling(df[,variable][[1]]/denominator))
+  
+  ggplot(df) +
+    geom_sf(color = "white", fill = "black") +
+    geom_sf(data = dot, color = ifelse(type == "prod", "green", "purple"), 
+            size = .7, alpha = .3) +
+    ggtitle(title) +
+    theme_void()
+}
+
+#home-based other
+ex_hbo_prod <- dotdensity(existing_geo, "hbo_prod", 3000, 
+                          "prod", "Existing HBO Production")
+alt_hbo_prod <- dotdensity(alternative_geo, "hbo_prod", 3000, 
+                           "prod", "Alternative HBO Production")
+ex_hbo_attr <- dotdensity(existing_geo, "hbo_attr", 3000, 
+                          "attr", "Existing HBO Attraction")
+alt_hbo_attr <- dotdensity(alternative_geo, "hbo_attr", 3000, 
+                           "attr", "Alternative HBO Attraction")
+
+#home-based work
+ex_hbw_prod <- dotdensity(existing_geo, "hbw_prod", 3000, 
+                          "prod", "Existing HBW Production")
+alt_hbw_prod <- dotdensity(alternative_geo, "hbw_prod", 3000, 
+                           "prod", "Alternative HBW Production")
+ex_hbw_attr <- dotdensity(existing_geo, "hbw_attr", 3000, 
+                          "attr", "Existing HBW Attraction")
+alt_hbw_attr <- dotdensity(alternative_geo, "hbw_attr", 3000, 
+                           "attr", "Alternative HBW Attraction")
+
+#non-home based
+ex_nhb_prod <- dotdensity(existing_geo, "nhb_prod", 3000, 
+                          "prod", "Existing NHB Production")
+alt_nhb_prod <- dotdensity(alternative_geo, "nhb_prod", 3000, 
+                           "prod", "Alternative NHB Production")
+ex_nhb_attr <- dotdensity(existing_geo, "nhb_attr", 3000, 
+                          "attr", "Existing NHB Attraction")
+alt_nhb_attr <- dotdensity(alternative_geo, "nhb_attr", 3000, 
+                           "attr", "Alternative NHB Attraction")
+
+
+ex_hbo_prod
+alt_hbo_prod
+ex_hbo_attr
+alt_hbo_attr
+ex_hbw_prod
+alt_hbw_prod
+ex_hbw_attr
+alt_hbw_attr
+ex_nhb_prod
+alt_nhb_prod
+ex_nhb_attr
+alt_nhb_attr
+
 
 #palettes
 map_color<- brewer.pal(5,"BuPu")
+map_color2 <- brewer.pal(10, "PiYG")
+
 
 
 ggplot(existing_geo) +
-  geom_sf(aes(fill = wfh_int), color = NA) +
-  scale_fill_manual(values = map_color) +
+  geom_sf(aes(fill = wfh_level), color = NA) +
+  scale_fill_manual(name = "WFH Ratio",
+                    values = map_color, 
+                    labels = c("Low", "Medium", "High")) +
   theme_void()
+
+ggplot(existing_geo) +
+  geom_sf(color = "white", fill = "black") +
+  geom_sf(data = hbo_prod_dot, color = "purple", size = .7, alpha = .3) +
+  geom_sf(data = hbo_attr_dot, color = "green", size = .6, alpha = .1) +
+  theme_void()
+
+
+# chloropleths for existing/alt differences
+sj_trips <- existing_geo[, c(1:2, 55:66)] %>%
+  st_join(alternative_geo[, c(1:2, 61:73)]) %>%
+  mutate(hbo_prod = round((hbo_prod.y - hbo_prod.x) / hbo_prod.x * 100),
+         hbo_attr = round((hbo_attr.y - hbo_attr.x) / hbo_attr.x * 100),
+         hbw_prod = round((hbw_prod.y - hbw_prod.x) / hbw_prod.x * 100),
+         hbw_attr = round((hbw_attr.y - hbw_attr.x) / hbw_attr.x * 100),
+         nhb_prod = round((nhb_prod.y - nhb_prod.x) / nhb_prod.x * 100),
+         nhb_attr = round((nhb_attr.y - nhb_attr.x) / nhb_attr.x * 100)) %>%
+  mutate(hbo_prod = ifelse(hbo_prod > 100, 150, hbo_prod),
+         hbo_attr = ifelse(hbo_attr > 100, 150, hbo_attr),
+         hbw_prod = ifelse(hbw_prod > 100, 150, hbw_prod),
+         hbw_attr = ifelse(hbw_attr > 100, 150, hbw_attr),
+         nhb_prod = ifelse(nhb_prod > 100, 150, nhb_prod),
+         nhb_attr = ifelse(nhb_attr > 100, 150, nhb_attr))
+
+chlormap <- function(df, variable, pal = map_color2, title = NULL){
+  ggplot(df) +
+    geom_sf(aes(fill = df[,variable][[1]]), alpha = .7, color = NA) +
+    scale_fill_gradientn(name = title,
+                         colors = pal,
+                         breaks = seq(-150, 150, by = 50),
+                         labels = c("","",
+                                    "50% decrease",
+                                    "No change", "",
+                                    "100% increase",
+                                    "More than 100% increase")) +
+    theme_void()
+
+}
+
+hbo_prod_chlor <- chlormap(sj_trips, "hbo_prod",
+                           title = "Change in HBO Production\nExisting to Alternative\n")
+
+hbo_attr_chlor <- chlormap(sj_trips, "hbo_attr",
+                           title = "Change in HBO Attractions\nExisting to Alternative\n")
+
+hbw_prod_chlor <- chlormap(sj_trips, "hbw_prod",
+                           title = "Change in HBW Production\nExisting to Alternative\n")
+
+hbw_attr_chlor <- chlormap(sj_trips, "hbw_attr",
+                           title = "Change in HBW Attractions\nExisting to Alternative\n")
+
+nhb_prod_chlor <- chlormap(sj_trips, "nhb_prod",
+                           title = "Change in NHB Production\nExisting to Alternative\n")
+
+nhb_attr_chlor <- chlormap(sj_trips, "nhb_attr",
+                           title = "Change in NHB Attractions\nExisting to Alternative\n")
+
+hbo_prod_chlor
+hbo_attr_chlor
+hbw_prod_chlor
+hbw_attr_chlor
+nhb_prod_chlor
+nhb_attr_chlor
 
 
 
