@@ -15,9 +15,8 @@ library(jtools)
 library(knitr)
 library(sf)
 library(RColorBrewer)
-library(viridis) 
-library(gridExtra)
-
+library(flextable)
+library(huxtable)
 ```
 
 
@@ -170,7 +169,11 @@ HBO_model2 <- svyglm(HBO ~ size_ + wfh_int_, svy_trips)
 export_summs(HBO_model1, HBO_model2,
              error_pos = "right",
              error_format = "(p = {p.value})",
-             model.names = c("Full model", "Reduced model"))
+             model.names = c("Full model", "Reduced model"), 
+             to.file = "html", file.name = "graphics/HBO_model_summary.html")
+
+
+
 ```
 
 ```{r, message=F, echo=F, warning=F}
@@ -188,7 +191,8 @@ HBW_model2 <- svyglm(HBW ~ size_ + wfh_int_, svy_trips)
 export_summs(HBW_model1, HBW_model2,
              error_pos = "right",
              error_format = "(p = {p.value})",
-             model.names = c("Full model", "Reduced model"))
+             model.names = c("Full model", "Reduced model"), 
+             to.file = "html", file.name = "graphics/HBW_model_summary.html")
 
 ```
 
@@ -207,7 +211,8 @@ NHB_model2 <- svyglm(NHB ~ size_ + wfh_int_, svy_trips)
 export_summs(NHB_model1, NHB_model2,
              error_pos = "right",
              error_format = "(p = {p.value})",
-             model.names = c("Full model", "Reduced model"))
+             model.names = c("Full model", "Reduced model"), 
+             to.file = "html", file.name = "graphics/NHB_model_summary.html")
 
 ```
 #Apply trip production model to existing zonal data
@@ -436,9 +441,11 @@ dotdensity <- function(df, variable, denominator, type, title){
   dot <- st_sample(df, size = ceiling(df[,variable][[1]]/denominator))
   
   ggplot(df) +
-    geom_sf(color = "white", fill = "black") +
+    geom_sf(color = "white", fill = "black", size = .2) +
     geom_sf(data = dot, color = ifelse(type == "prod", "green", "purple"), 
-            size = .7, alpha = .3) +
+            aes(size = .7), alpha = .3) +
+    scale_size_continuous(name = NULL,
+                          labels = "3,000 trip productions", range = c(.7, .7)) +
     ggtitle(title) +
     theme_void()
 }
@@ -486,6 +493,14 @@ ex_nhb_prod
 alt_nhb_prod
 ex_nhb_attr
 alt_nhb_attr
+
+ggsave("graphics/hbo_prod.jpeg", ex_hbo_prod)
+ggsave("graphics/hbo_attr.jpeg", ex_hbo_attr)
+ggsave("graphics/hbw_prod.jpeg", ex_hbw_prod)
+ggsave("graphics/hbw_attr.jpeg", ex_hbw_attr)
+ggsave("graphics/nhb_prod.jpeg", ex_nhb_prod)
+ggsave("graphics/nhb_attr.jpeg", ex_nhb_attr)
+
 ```
 
 ## Chloropleths
