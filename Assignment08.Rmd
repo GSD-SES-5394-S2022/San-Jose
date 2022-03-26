@@ -17,6 +17,9 @@ library(ggspatial)
 library(scenRios)
 ```
 
+
+# EXISTING CONDITIONS
+
 # Load trip generation data and skims
 ```{r}
 zones <- here("existing",
@@ -234,10 +237,18 @@ NHB_big_attraction
 #all three trip types: 06085505006
 
 desire_lines_one_zone_HBO <- desire_lines_HBO %>%
-  filter(d_id == big_attraction)
+  filter(d_id == HBO_big_attraction)
+
+desire_lines_one_zone_HBW <- desire_lines_HBW %>%
+  filter(d_id == HBW_big_attraction)
+
+desire_lines_one_zone_NHB <- desire_lines_NHB %>%
+  filter(d_id == NHB_big_attraction)
+
 
 # pull out the x/y coordinates of the desire lines
 # to enable curving them on the map, just for aesthetics
+# HBO
 desire_lines_coord_HBO <- desire_lines_one_zone_HBO %>%
   st_cast("POINT") %>%
   st_coordinates() %>%
@@ -248,16 +259,371 @@ desire_lines_coord_HBO <- desire_lines_one_zone_HBO %>%
           .[!c(TRUE,FALSE),]) %>%
   cbind(desire_lines_one_zone_HBO)
 
+# HBW
+desire_lines_coord_HBW <- desire_lines_one_zone_HBW %>%
+  st_cast("POINT") %>%
+  st_coordinates() %>%
+  .[c(TRUE,FALSE),] %>%
+  cbind(desire_lines_one_zone_HBW %>%
+          st_cast("POINT") %>%
+          st_coordinates() %>%
+          .[!c(TRUE,FALSE),]) %>%
+  cbind(desire_lines_one_zone_HBW)
+
+# NHB
+desire_lines_coord_NHB <- desire_lines_one_zone_NHB %>%
+  st_cast("POINT") %>%
+  st_coordinates() %>%
+  .[c(TRUE,FALSE),] %>%
+  cbind(desire_lines_one_zone_NHB %>%
+          st_cast("POINT") %>%
+          st_coordinates() %>%
+          .[!c(TRUE,FALSE),]) %>%
+  cbind(desire_lines_one_zone_NHB)
+
+
+
 ggplot(desire_lines_one_zone_HBO) +
-  annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
   geom_curve(data = desire_lines_coord_HBO,
-             aes(x = X, y = Y, xend = X.1, yend = Y.1, alpha = flow), curvature = .2) +
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2, show.legend = F) +
+  scale_color_viridis_b(option = "C") +
   theme_void()
+
+#zoom in on downtown for more clarity
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymin
+
+ggplot(desire_lines_one_zone_HBO) +
+  geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBO,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side)) +
+  scale_color_viridis_b(option = "C",
+                        name = "Trip Flow",
+                        labels = c("3,000","6,000","9,000")) +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
 
 
 
 ```
 
 
+
+
+
+
+# ALTERNATIVE CONDITIONS
+
+# Load trip generation data and skims
+```{r}
+zones_alt <- here("alternative",
+                  "data",
+                  "alternative_sanjose.csv") %>%
+  read_csv(show_col_types = FALSE)
+
+skims_alt <- here("alternative",
+                  "data",
+                  "skims.csv") %>%
+  read_csv(show_col_types = FALSE)
+
+```
+
+# Calculate average travel time by trip purpose
+
+```{r}
+#download and temporarily store NHTS data
+
+temp <- tempfile()
+download.file("https://nhts.ornl.gov/assets/2016/download/csv.zip", temp)
+
+trips <- read_csv(unz(temp, "trippub.csv"), 
+                      show_col_types = FALSE) %>%
+  filter(HH_CBSA == "41940")
+
+unlink(temp)
+
+
+
+```
+
+```{r}
+#trip purpose variable
+
+trips <- trips %>%
+  mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
+                                WHYTO == "02" ~ TRUE,
+                                WHYFROM == "01" ~ TRUE,
+                                WHYFROM == "02" ~ TRUE,
+                                TRUE ~ FALSE)) %>%
+  mutate(work = ifelse(WHYTO == "03" | WHYFROM == "03", TRUE, FALSE)) %>%
+  mutate(purpose = case_when(home_based & work ~ "HBW",
+                            home_based ~ "HBO",
+                            TRUE ~ "NHB"))
+
+
+#create survey object, calculate avg travel time by trip purpose
+
+trips_svy <- trips %>%
+  as_survey(weights = WTTRDFIN)
+
+ttime_by_purpose <- trips_svy %>%
+  group_by(purpose) %>%
+  summarise(avg_time = survey_mean(TRVLCMIN))
+
+ttime_by_purpose
+
+
+```
+
+# Calculate minimum travel time across all modes
+
+```{r}
+skims_alt <- skims_alt %>%
+  mutate(min_time = pmin(transit_time, 
+                         car_time,
+                         bike_time,
+                         walk_time,
+                         na.rm = TRUE)) 
+
+```
+
+# Friction Factors
+
+## Gamma Function
+
+```{r}
+skims_alt <- skims_alt %>%
+  mutate(F_HBW = min_time^-0.503*exp(-0.078*min_time),
+         F_HBO = min_time^-3.993*exp(-0.019*min_time),
+         F_NHB = min_time^-3.345*exp(-0.003*min_time)) 
+
+
+```
+
+# Estimate travel flows
+Only run the travel flows code if we are changing the 
+Friction Factor type, because it takes so long to 
+run. The lists are saved and can be loaded directly
+using the code directly below.
+
+```{r}
+#Load travel flows
+#HBO
+HBO_dist_alt <- readRDS(here("alternative",
+                             "data",
+                             "HBO_dist_alt.Rds"))
+
+#HBW
+HBW_dist_alt <- readRDS(here("alternative",
+                             "data",
+                             "HBW_dist_alt.Rds"))
+
+#NHB
+NHB_dist_alt <- readRDS(here("alternative",
+                             "data",
+                             "NHB_dist_alt.Rds"))
+
+
+
+
+```
+
+# following chunk not necessary unless changing friction factors
+```{r}
+#HBO travel flows
+HBO_dist_alt <- grvty_balancing(od_zones = zones_alt,
+                            friction = skims_alt,
+                            zone_id = "GEOID",
+                            zone_o = "hbo_prod",
+                            zone_d = "hbo_attr_bal",
+                            friction_o_id = "fromId",
+                            friction_d_id = "toId",
+                            friction_factor = "F_HBO",
+                            tolerance = 5,
+                            max_iter = 50000)
+
+saveRDS(HBO_dist_alt, here("alternative",
+                       "data",
+                       "HBO_dist_alt.Rds"))
+
+
+#HBW travel flows
+HBW_dist_alt <- grvty_balancing(od_zones = zones_alt,
+                            friction = skims_alt,
+                            zone_id = "GEOID",
+                            zone_o = "hbw_prod",
+                            zone_d = "hbw_attr_bal",
+                            friction_o_id = "fromId",
+                            friction_d_id = "toId",
+                            friction_factor = "F_HBW",
+                            tolerance = 5,
+                            max_iter = 50000)
+
+table(HBW_dist$flows$flow > 0)
+
+saveRDS(HBW_dist_alt, here("alternative",
+                       "data",
+                       "HBW_dist_alt.Rds"))
+
+
+#NHB travel flows
+NHB_dist_alt <- grvty_balancing(od_zones = zones_alt,
+                            friction = skims_alt,
+                            zone_id = "GEOID",
+                            zone_o = "nhb_prod",
+                            zone_d = "nhb_attr_bal",
+                            friction_o_id = "fromId",
+                            friction_d_id = "toId",
+                            friction_factor = "F_NHB",
+                            tolerance = 5,
+                            max_iter = 50000)
+
+table(NHB_dist$flows$flow > 0)
+
+saveRDS(NHB_dist_alt, here("alternative",
+                       "data",
+                       "NHB_dist_alt.Rds"))
+
+
+
+```
+
+# Map desire lines
+
+```{r}
+zone_boundaries <- here("zones",
+              "zones_sanjose.geojson") %>%
+  st_read(quiet = TRUE)
+
+desire_lines_HBO_alt <- od_to_sf(HBO_dist_alt$flows, zone_boundaries, silent = TRUE) %>%
+  filter(flow > 0)
+
+desire_lines_HBW_alt <- od_to_sf(HBW_dist_alt$flows, zone_boundaries, silent = TRUE) %>%
+  filter(flow > 0)
+
+desire_lines_NHB_alt <- od_to_sf(NHB_dist_alt$flows, zone_boundaries, silent = TRUE) %>%
+  filter(flow > 0)
+
+
+
+#very messy plot with little detail available
+ggplot(desire_lines_HBO) +
+  annotation_map_tile(type = "cartolight", zoom = 10, progress = "none") +
+  geom_sf(aes(alpha = flow)) +
+  theme_void()
+
+#most attractive HBO zone
+HBO_big_attraction <- zones[zones$hbo_attr_bal == max(zones$hbo_attr_bal),]$GEOID
+
+HBO_big_attraction
+
+#most attractive HBW zone
+HBW_big_attraction <- zones[zones$hbw_attr_bal == max(zones$hbw_attr_bal),]$GEOID
+
+HBW_big_attraction
+
+#most attractive HBW zone
+NHB_big_attraction <- zones[zones$nhb_attr_bal == max(zones$nhb_attr_bal),]$GEOID
+
+NHB_big_attraction
+
+# the same zone is the largest attraction for 
+#all three trip types: 06085505006
+
+desire_lines_one_zone_HBO <- desire_lines_HBO %>%
+  filter(d_id == HBO_big_attraction)
+
+desire_lines_one_zone_HBW <- desire_lines_HBW %>%
+  filter(d_id == HBW_big_attraction)
+
+desire_lines_one_zone_NHB <- desire_lines_NHB %>%
+  filter(d_id == NHB_big_attraction)
+
+
+# pull out the x/y coordinates of the desire lines
+# to enable curving them on the map, just for aesthetics
+# HBO
+desire_lines_coord_HBO <- desire_lines_one_zone_HBO %>%
+  st_cast("POINT") %>%
+  st_coordinates() %>%
+  .[c(TRUE,FALSE),] %>%
+  cbind(desire_lines_one_zone_HBO %>%
+          st_cast("POINT") %>%
+          st_coordinates() %>%
+          .[!c(TRUE,FALSE),]) %>%
+  cbind(desire_lines_one_zone_HBO)
+
+# HBW
+desire_lines_coord_HBW <- desire_lines_one_zone_HBW %>%
+  st_cast("POINT") %>%
+  st_coordinates() %>%
+  .[c(TRUE,FALSE),] %>%
+  cbind(desire_lines_one_zone_HBW %>%
+          st_cast("POINT") %>%
+          st_coordinates() %>%
+          .[!c(TRUE,FALSE),]) %>%
+  cbind(desire_lines_one_zone_HBW)
+
+# NHB
+desire_lines_coord_NHB <- desire_lines_one_zone_NHB %>%
+  st_cast("POINT") %>%
+  st_coordinates() %>%
+  .[c(TRUE,FALSE),] %>%
+  cbind(desire_lines_one_zone_NHB %>%
+          st_cast("POINT") %>%
+          st_coordinates() %>%
+          .[!c(TRUE,FALSE),]) %>%
+  cbind(desire_lines_one_zone_NHB)
+
+
+
+ggplot(desire_lines_one_zone_HBO) +
+  # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBO,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2, show.legend = F) +
+  scale_color_viridis_b(option = "C") +
+  theme_void()
+
+#zoom in on downtown for more clarity
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymin
+
+ggplot(desire_lines_one_zone_HBO) +
+  geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBO,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side)) +
+  scale_color_viridis_b(option = "C",
+                        name = "Trip Flow",
+                        labels = c("3,000","6,000","9,000")) +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+
+
+
+```
 
