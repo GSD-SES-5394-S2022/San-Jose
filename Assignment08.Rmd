@@ -5,26 +5,215 @@ date: "3/25/2022"
 output: html_document
 ---
 
+# Load Libraries
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(sf)
+library(survey)
+library(srvyr)
+library(od)
+library(ggspatial)
+library(scenRios)
 ```
 
-## R Markdown
+# Load trip generation data and skims
+```{r}
+zones <- here("existing",
+              "data",
+              "existing_sanjose.csv") %>%
+  read_csv(show_col_types = FALSE)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+skims <- here("existing",
+              "data",
+              "skims.csv") %>%
+  read_csv(show_col_types = FALSE)
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
 ```
 
-## Including Plots
+# Calculate average travel time by trip purpose
 
-You can also embed plots, for example:
+```{r}
+#download and temporarily store NHTS data
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+temp <- tempfile()
+download.file("https://nhts.ornl.gov/assets/2016/download/csv.zip", temp)
+
+trips <- read_csv(unz(temp, "trippub.csv"), 
+                      show_col_types = FALSE) %>%
+  filter(HH_CBSA == "41940")
+
+unlink(temp)
+
+
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+#trip purpose variable
+
+trips <- trips %>%
+  mutate(home_based = case_when(WHYTO == "01" ~ TRUE,
+                                WHYTO == "02" ~ TRUE,
+                                WHYFROM == "01" ~ TRUE,
+                                WHYFROM == "02" ~ TRUE,
+                                TRUE ~ FALSE)) %>%
+  mutate(work = ifelse(WHYTO == "03" | WHYFROM == "03", TRUE, FALSE)) %>%
+  mutate(purpose = case_when(home_based & work ~ "HBW",
+                            home_based ~ "HBO",
+                            TRUE ~ "NHB"))
+
+
+#create survey object, calculate avg travel time by trip purpose
+
+trips_svy <- trips %>%
+  as_survey(weights = WTTRDFIN)
+
+ttime_by_purpose <- trips_svy %>%
+  group_by(purpose) %>%
+  summarise(avg_time = survey_mean(TRVLCMIN))
+
+ttime_by_purpose
+
+
+```
+
+# Calculate minimum travel time across all modes
+
+```{r}
+skims <- skims %>%
+  mutate(min_time = pmin(transit_time, 
+                         car_time,
+                         bike_time,
+                         walk_time,
+                         na.rm = TRUE)) 
+
+```
+
+# Friction Factors
+
+## Gamma Function
+
+```{r}
+skims <- skims %>%
+  mutate(F_HBW = min_time^-0.503*exp(-0.078*min_time),
+         F_HBO = min_time^-3.993*exp(-0.019*min_time),
+         F_NHB = min_time^-3.345*exp(-0.003*min_time)) 
+
+
+```
+
+# Estimate travel flows
+Only run the travel flows code if we are changing the 
+Friction Factor type, because it takes so long to 
+run. The lists are saved and can be loaded directly
+using the code directly below.
+
+```{r}
+#Load travel flows
+#HBO
+HBO_dist <- readRDS(here("existing",
+                         "data",
+                         "HBO_dist.Rds"))
+
+#HBW
+HBW_dist <- readRDS(here("existing",
+                         "data",
+                         "HBW_dist.Rds"))
+
+#NHB
+NHB_dist <- readRDS(here("existing",
+                         "data",
+                         "NHB_dist.Rds"))
+
+
+
+
+```
+
+```{r}
+#HBO travel flows
+HBO_dist <- grvty_balancing(od_zones = zones,
+                            friction = skims,
+                            zone_id = "GEOID",
+                            zone_o = "hbo_prod",
+                            zone_d = "hbo_attr_bal",
+                            friction_o_id = "fromId",
+                            friction_d_id = "toId",
+                            friction_factor = "F_HBO",
+                            tolerance = 5,
+                            max_iter = 50000)
+
+saveRDS(HBO_dist, here("existing",
+                       "data",
+                       "HBO_dist.Rds"))
+
+
+#HBW travel flows
+HBW_dist <- grvty_balancing(od_zones = zones,
+                            friction = skims,
+                            zone_id = "GEOID",
+                            zone_o = "hbw_prod",
+                            zone_d = "hbw_attr_bal",
+                            friction_o_id = "fromId",
+                            friction_d_id = "toId",
+                            friction_factor = "F_HBW",
+                            tolerance = 5,
+                            max_iter = 50000)
+
+table(HBW_dist$flows$flow > 0)
+
+saveRDS(HBW_dist, here("existing",
+                       "data",
+                       "HBW_dist.Rds"))
+
+
+#NHB travel flows
+NHB_dist <- grvty_balancing(od_zones = zones,
+                            friction = skims,
+                            zone_id = "GEOID",
+                            zone_o = "nhb_prod",
+                            zone_d = "nhb_attr_bal",
+                            friction_o_id = "fromId",
+                            friction_d_id = "toId",
+                            friction_factor = "F_NHB",
+                            tolerance = 5,
+                            max_iter = 50000)
+
+table(NHB_dist$flows$flow > 0)
+
+saveRDS(NHB_dist, here("existing",
+                       "data",
+                       "NHB_dist.Rds"))
+
+
+
+```
+
+# Map desire lines
+
+```{r}
+zone_boundaries <- here("zones",
+              "zones_sanjose.geojson") %>%
+  st_read(quiet = TRUE)
+
+desire_lines_HBO <- od_to_sf(HBO_dist$flows, zone_boundaries, silent = TRUE) %>%
+  filter(flow > 0)
+
+#very messy plot with little detail available
+ggplot(desire_lines_HBO) +
+  annotation_map_tile(type = "cartolight", zoom = 10, progress = "none") +
+  geom_sf(aes(alpha = flow)) +
+  theme_void()
+
+#most attractive zone
+big_attraction <- zones[zones$hbo_attr_bal == max(zones$hbo_attr_bal),]$GEOID
+
+big_attraction
+
+
+
+```
+
+
+

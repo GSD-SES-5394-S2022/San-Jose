@@ -190,6 +190,20 @@ write_csv(transit_skim_existing, here("existing/data/transit_skim2.csv"))
 write_csv(car_skim_existing, here("existing/data/car_skim.csv"))
 
 
+
+bike_skim <- read_csv(here("existing/data/bike_skim.csv"))
+walk_skim <- read_csv(here("existing/data/walk_skim.csv"))
+transit_skim <- read_csv(here("existing/data/transit_skim2.csv"))
+car_skim <- read_csv(here("existing/data/car_skim.csv"))
+
+skims <- transit_skim %>%
+  full_join(car_skim, by = c("fromId", "toId")) %>%
+  full_join(bike_skim, by = c("fromId", "toId")) %>%
+  full_join(walk_skim, by = c("fromId", "toId"))
+
+write_csv(skims, here("existing/data/skims.csv"))
+
+
 ```
 
 # Save Alternative Skims (no change to Existing)
@@ -199,6 +213,8 @@ write_csv(bike_skim_existing, here("alternative/data/bike_skim.csv"))
 write_csv(walk_skim_existing, here("alternative/data/walk_skim.csv"))
 write_csv(transit_skim_existing, here("alternative/data/transit_skim.csv"))
 write_csv(car_skim_existing, here("alternative/data/car_skim.csv"))
+
+write_csv(skims, here("alternative/data/skims.csv"))
 
 
 ```
