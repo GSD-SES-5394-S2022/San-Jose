@@ -519,82 +519,76 @@ desire_lines_NHB_alt <- od_to_sf(NHB_dist_alt$flows, zone_boundaries, silent = T
 
 
 
-#very messy plot with little detail available
-ggplot(desire_lines_HBO) +
-  annotation_map_tile(type = "cartolight", zoom = 10, progress = "none") +
-  geom_sf(aes(alpha = flow)) +
-  theme_void()
-
 #most attractive HBO zone
-HBO_big_attraction <- zones[zones$hbo_attr_bal == max(zones$hbo_attr_bal),]$GEOID
+HBO_big_attraction_alt <- zones_alt[zones_alt$hbo_attr_bal == max(zones_alt$hbo_attr_bal),]$GEOID
 
-HBO_big_attraction
-
-#most attractive HBW zone
-HBW_big_attraction <- zones[zones$hbw_attr_bal == max(zones$hbw_attr_bal),]$GEOID
-
-HBW_big_attraction
+HBO_big_attraction_alt
 
 #most attractive HBW zone
-NHB_big_attraction <- zones[zones$nhb_attr_bal == max(zones$nhb_attr_bal),]$GEOID
+HBW_big_attraction_alt <- zones_alt[zones_alt$hbw_attr_bal == max(zones_alt$hbw_attr_bal),]$GEOID
 
-NHB_big_attraction
+HBW_big_attraction_alt
+
+#most attractive HBW zone
+NHB_big_attraction_alt <- zones_alt[zones_alt$nhb_attr_bal == max(zones_alt$nhb_attr_bal),]$GEOID
+
+NHB_big_attraction_alt
 
 # the same zone is the largest attraction for 
 #all three trip types: 06085505006
 
-desire_lines_one_zone_HBO <- desire_lines_HBO %>%
-  filter(d_id == HBO_big_attraction)
+desire_lines_one_zone_HBO_alt <- desire_lines_HBO_alt %>%
+  filter(d_id == HBO_big_attraction_alt)
 
-desire_lines_one_zone_HBW <- desire_lines_HBW %>%
-  filter(d_id == HBW_big_attraction)
+desire_lines_one_zone_HBW_alt <- desire_lines_HBW_alt %>%
+  filter(d_id == HBW_big_attraction_alt)
 
-desire_lines_one_zone_NHB <- desire_lines_NHB %>%
-  filter(d_id == NHB_big_attraction)
+desire_lines_one_zone_NHB_alt <- desire_lines_NHB_alt %>%
+  filter(d_id == NHB_big_attraction_alt)
 
 
 # pull out the x/y coordinates of the desire lines
 # to enable curving them on the map, just for aesthetics
 # HBO
-desire_lines_coord_HBO <- desire_lines_one_zone_HBO %>%
+desire_lines_coord_HBO_alt <- desire_lines_one_zone_HBO_alt %>%
   st_cast("POINT") %>%
   st_coordinates() %>%
   .[c(TRUE,FALSE),] %>%
-  cbind(desire_lines_one_zone_HBO %>%
+  cbind(desire_lines_one_zone_HBO_alt %>%
           st_cast("POINT") %>%
           st_coordinates() %>%
           .[!c(TRUE,FALSE),]) %>%
-  cbind(desire_lines_one_zone_HBO)
+  cbind(desire_lines_one_zone_HBO_alt)
 
 # HBW
-desire_lines_coord_HBW <- desire_lines_one_zone_HBW %>%
+desire_lines_coord_HBW_alt <- desire_lines_one_zone_HBW_alt %>%
   st_cast("POINT") %>%
   st_coordinates() %>%
   .[c(TRUE,FALSE),] %>%
-  cbind(desire_lines_one_zone_HBW %>%
+  cbind(desire_lines_one_zone_HBW_alt %>%
           st_cast("POINT") %>%
           st_coordinates() %>%
           .[!c(TRUE,FALSE),]) %>%
-  cbind(desire_lines_one_zone_HBW)
+  cbind(desire_lines_one_zone_HBW_alt)
 
 # NHB
-desire_lines_coord_NHB <- desire_lines_one_zone_NHB %>%
+desire_lines_coord_NHB_alt <- desire_lines_one_zone_NHB_alt %>%
   st_cast("POINT") %>%
   st_coordinates() %>%
   .[c(TRUE,FALSE),] %>%
-  cbind(desire_lines_one_zone_NHB %>%
+  cbind(desire_lines_one_zone_NHB_alt %>%
           st_cast("POINT") %>%
           st_coordinates() %>%
           .[!c(TRUE,FALSE),]) %>%
-  cbind(desire_lines_one_zone_NHB)
+  cbind(desire_lines_one_zone_NHB_alt)
 
 
 
-ggplot(desire_lines_one_zone_HBO) +
+ggplot(desire_lines_one_zone_HB_altO) +
   # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
   geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
-  geom_curve(data = desire_lines_coord_HBO,
+  geom_curve(data = desire_lines_coord_HBO_alt,
              aes(x = X, y = Y, xend = X.1, yend = Y.1, 
                  alpha = flow,
                  color = flow), curvature = .2, show.legend = F) +
@@ -602,15 +596,15 @@ ggplot(desire_lines_one_zone_HBO) +
   theme_void()
 
 #zoom in on downtown for more clarity
-left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmin - .01
-right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmax + .01
-top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymax
-bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymin
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$ymin
 
-ggplot(desire_lines_one_zone_HBO) +
+ggplot(desire_lines_one_zone_HBO_alt) +
   geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
-  geom_curve(data = desire_lines_coord_HBO,
+  geom_curve(data = desire_lines_coord_HBO_alt,
              aes(x = X, y = Y, xend = X.1, yend = Y.1, 
                  alpha = flow,
                  color = flow), curvature = .2) +
