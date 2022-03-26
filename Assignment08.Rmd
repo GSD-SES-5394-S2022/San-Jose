@@ -131,6 +131,7 @@ NHB_dist <- readRDS(here("existing",
 
 ```
 
+# following chunk not necessary unless changing friction factors
 ```{r}
 #HBO travel flows
 HBO_dist <- grvty_balancing(od_zones = zones,
@@ -200,16 +201,59 @@ zone_boundaries <- here("zones",
 desire_lines_HBO <- od_to_sf(HBO_dist$flows, zone_boundaries, silent = TRUE) %>%
   filter(flow > 0)
 
+desire_lines_HBW <- od_to_sf(HBW_dist$flows, zone_boundaries, silent = TRUE) %>%
+  filter(flow > 0)
+
+desire_lines_NHB <- od_to_sf(NHB_dist$flows, zone_boundaries, silent = TRUE) %>%
+  filter(flow > 0)
+
+
+
 #very messy plot with little detail available
 ggplot(desire_lines_HBO) +
   annotation_map_tile(type = "cartolight", zoom = 10, progress = "none") +
   geom_sf(aes(alpha = flow)) +
   theme_void()
 
-#most attractive zone
-big_attraction <- zones[zones$hbo_attr_bal == max(zones$hbo_attr_bal),]$GEOID
+#most attractive HBO zone
+HBO_big_attraction <- zones[zones$hbo_attr_bal == max(zones$hbo_attr_bal),]$GEOID
 
-big_attraction
+HBO_big_attraction
+
+#most attractive HBW zone
+HBW_big_attraction <- zones[zones$hbw_attr_bal == max(zones$hbw_attr_bal),]$GEOID
+
+HBW_big_attraction
+
+#most attractive HBW zone
+NHB_big_attraction <- zones[zones$nhb_attr_bal == max(zones$nhb_attr_bal),]$GEOID
+
+NHB_big_attraction
+
+# the same zone is the largest attraction for 
+#all three trip types: 06085505006
+
+desire_lines_one_zone_HBO <- desire_lines_HBO %>%
+  filter(d_id == big_attraction)
+
+# pull out the x/y coordinates of the desire lines
+# to enable curving them on the map, just for aesthetics
+desire_lines_coord_HBO <- desire_lines_one_zone_HBO %>%
+  st_cast("POINT") %>%
+  st_coordinates() %>%
+  .[c(TRUE,FALSE),] %>%
+  cbind(desire_lines_one_zone_HBO %>%
+          st_cast("POINT") %>%
+          st_coordinates() %>%
+          .[!c(TRUE,FALSE),]) %>%
+  cbind(desire_lines_one_zone_HBO)
+
+ggplot(desire_lines_one_zone_HBO) +
+  annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBO,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, alpha = flow), curvature = .2) +
+  theme_void()
 
 
 
