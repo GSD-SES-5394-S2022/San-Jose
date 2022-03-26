@@ -706,7 +706,7 @@ ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbo_flow_dif),]) +
 ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbw_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
-                 color = hbw_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all$hbw_flow_dif < -.4, .1, 1)) +
+                 color = hbw_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all$hbw_flow_dif > -.1, .2, 1)) +
   # coord_sf(xlim = c(left_side, right_side),
   #          ylim = c(bottom_side, top_side)) +
   scale_color_gradient2(low = "red", mid = "grey60", high = "limegreen",
@@ -719,7 +719,9 @@ ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbw_flow_dif),]) +
 ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$nhb_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
-                 color = nhb_flow_dif*100), curvature = .2, alpha = .5) +
+                 color = nhb_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all$hbo_flow_dif > 0 &
+                                                                             desire_lines_coord_all$hbo_flow_dif < .4,
+                                                                           .1, 1)) +
   # coord_sf(xlim = c(left_side, right_side),
   #          ylim = c(bottom_side, top_side)) +
   scale_color_gradient2(low = "red", mid = "grey60", high = "limegreen",
