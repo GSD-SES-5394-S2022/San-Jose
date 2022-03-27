@@ -98,10 +98,36 @@ skims <- skims %>%
 ## Gamma Function
 
 ```{r}
+#Large MPO 1
+# skims <- skims %>%
+#   mutate(F_HBW = min_time^-0.503*exp(-0.078*min_time),
+#          F_HBO = min_time^-3.993*exp(-0.019*min_time),
+#          F_NHB = min_time^-3.345*exp(-0.003*min_time))
+
+
+#Large MPO 2
+# skims <- skims %>%
+#   mutate(F_HBW = min_time^-1.65*exp(-0.0398*min_time),
+#          F_HBO = min_time^-1.51*exp(-0.018*min_time),
+#          F_NHB = min_time^-1.94*exp(-0.116*min_time))
+
+
+```
+
+## Power function
+We tried a gamma function for both Large MPO 1 and 2, and
+the best fit ended up being the power function. It may be 
+possible to get average travel time closer to the average
+indicated by the NHTS data, but due to time constraints,
+we will make due with the power function.
+
+```{r}
+
 skims <- skims %>%
-  mutate(F_HBW = min_time^-0.503*exp(-0.078*min_time),
-         F_HBO = min_time^-3.993*exp(-0.019*min_time),
-         F_NHB = min_time^-3.345*exp(-0.003*min_time)) 
+  mutate(F_HBO = min_time^-2,
+         F_HBW = min_time^-2,
+         F_NHB = min_time^-2) 
+
 
 
 ```
@@ -117,17 +143,17 @@ using the code directly below.
 #HBO
 HBO_dist <- readRDS(here("existing",
                          "data",
-                         "HBO_dist.Rds"))
+                         "HBO_dist_power.Rds"))
 
 #HBW
 HBW_dist <- readRDS(here("existing",
                          "data",
-                         "HBW_dist.Rds"))
+                         "HBW_dist_power.Rds"))
 
 #NHB
 NHB_dist <- readRDS(here("existing",
                          "data",
-                         "NHB_dist.Rds"))
+                         "NHB_dist_power.Rds"))
 
 
 
@@ -135,6 +161,12 @@ NHB_dist <- readRDS(here("existing",
 ```
 
 # following chunk not necessary unless changing friction factors
+
+We initially ran the model using gamma function parameters for Large MPO 1, but the 
+average travel times this yielded were about half as long as what is suggested by the 
+NHTS data. Looking at the 
+
+
 ```{r}
 #HBO travel flows
 HBO_dist <- grvty_balancing(od_zones = zones,
@@ -146,11 +178,11 @@ HBO_dist <- grvty_balancing(od_zones = zones,
                             friction_d_id = "toId",
                             friction_factor = "F_HBO",
                             tolerance = 5,
-                            max_iter = 50000)
+                            max_iter = 25000)
 
 saveRDS(HBO_dist, here("existing",
                        "data",
-                       "HBO_dist.Rds"))
+                       "HBO_dist_power.Rds"))
 
 
 #HBW travel flows
@@ -163,13 +195,13 @@ HBW_dist <- grvty_balancing(od_zones = zones,
                             friction_d_id = "toId",
                             friction_factor = "F_HBW",
                             tolerance = 5,
-                            max_iter = 50000)
+                            max_iter = 25000)
 
 table(HBW_dist$flows$flow > 0)
 
 saveRDS(HBW_dist, here("existing",
                        "data",
-                       "HBW_dist.Rds"))
+                       "HBW_dist_power.Rds"))
 
 
 #NHB travel flows
@@ -182,7 +214,7 @@ NHB_dist <- grvty_balancing(od_zones = zones,
                             friction_d_id = "toId",
                             friction_factor = "F_NHB",
                             tolerance = 5,
-                            max_iter = 50000)
+                            max_iter = 25000)
 
 table(NHB_dist$flows$flow > 0)
 
@@ -193,6 +225,80 @@ saveRDS(NHB_dist, here("existing",
 
 
 ```
+
+
+# Compare caluclated times to observed times
+
+```{r}
+
+
+#HBO existing
+
+HBO_flows <- HBO_dist$flows %>%
+  rename(fromId = o_id,
+         toId = d_id,
+         HBO_flow = flow)
+
+skims <- skims %>%
+  left_join(HBO_flows, by = c("fromId", "toId")) %>%
+  replace_na(list(HBO_flow = 0)) %>%
+  mutate(HBO_total_time = HBO_flow * min_time)
+
+HBO_mean_time <- sum(skims$HBO_total_time) / sum(skims$HBO_flow)
+
+
+
+#HBW existing
+
+HBW_flows <- HBW_dist$flows %>%
+  rename(fromId = o_id,
+         toId = d_id,
+         HBW_flow = flow)
+
+skims <- skims %>%
+  left_join(HBW_flows, by = c("fromId", "toId")) %>%
+  replace_na(list(HBW_flow = 0)) %>%
+  mutate(HBW_total_time = HBW_flow * min_time)
+
+HBW_mean_time <- sum(skims$HBW_total_time) / sum(skims$HBW_flow)
+
+
+
+#NHB existing
+
+NHB_flows <- NHB_dist$flows %>%
+  rename(fromId = o_id,
+         toId = d_id,
+         NHB_flow = flow)
+
+skims <- skims %>%
+  left_join(NHB_flows, by = c("fromId", "toId")) %>%
+  replace_na(list(NHB_flow = 0)) %>%
+  mutate(NHB_total_time = NHB_flow * min_time)
+
+NHB_mean_time <- sum(skims$NHB_total_time) / sum(skims$NHB_flow)
+
+
+
+
+```
+
+## Check averages
+
+```{r}
+ttime_by_purpose
+
+HBO_mean_time
+
+HBW_mean_time
+
+NHB_mean_time
+
+
+```
+
+
+
 
 # Map desire lines
 
@@ -212,11 +318,6 @@ desire_lines_NHB <- od_to_sf(NHB_dist$flows, zone_boundaries, silent = TRUE) %>%
 
 
 
-#very messy plot with little detail available
-ggplot(desire_lines_HBO) +
-  annotation_map_tile(type = "cartolight", zoom = 10, progress = "none") +
-  geom_sf(aes(alpha = flow)) +
-  theme_void()
 
 #most attractive HBO zone
 HBO_big_attraction <- zones[zones$hbo_attr_bal == max(zones$hbo_attr_bal),]$GEOID
@@ -258,7 +359,6 @@ desire_lines_one_zone_all <- desire_lines_one_zone_HBO %>%
               as.data.frame(),
             by = c("o_id", "d_id", "geometry")) %>%
   st_as_sf()
-
 
 
 # pull out the x/y coordinates of the desire lines
@@ -306,7 +406,11 @@ desire_lines_coord_all <- desire_lines_one_zone_all %>%
           st_coordinates() %>%
           .[!c(TRUE,FALSE),]) %>%
   cbind(desire_lines_one_zone_all)
+```
 
+## Plots
+
+```{r}
 
 
 
@@ -346,6 +450,7 @@ ggplot(desire_lines_one_zone_HBO) +
 
 
 ```
+
 
 
 
@@ -432,13 +537,33 @@ skims_alt <- skims_alt %>%
 ## Gamma Function
 
 ```{r}
-skims_alt <- skims_alt %>%
-  mutate(F_HBW = min_time^-0.503*exp(-0.078*min_time),
-         F_HBO = min_time^-3.993*exp(-0.019*min_time),
-         F_NHB = min_time^-3.345*exp(-0.003*min_time)) 
+# skims_alt <- skims_alt %>%
+#   mutate(F_HBW = min_time^-0.503*exp(-0.078*min_time),
+#          F_HBO = min_time^-3.993*exp(-0.019*min_time),
+#          F_NHB = min_time^-3.345*exp(-0.003*min_time)) 
 
 
 ```
+
+
+## Power function
+We tried a gamma function for both Large MPO 1 and 2, and
+the best fit ended up being the power function. It may be 
+possible to get average travel time closer to the average
+indicated by the NHTS data, but due to time constraints,
+we will make due with the power function.
+
+```{r}
+
+skims_alt <- skims_alt %>%
+  mutate(F_HBO = min_time^-2,
+         F_HBW = min_time^-2,
+         F_NHB = min_time^-2) 
+
+
+
+```
+
 
 # Estimate travel flows
 Only run the travel flows code if we are changing the 
@@ -451,17 +576,17 @@ using the code directly below.
 #HBO
 HBO_dist_alt <- readRDS(here("alternative",
                              "data",
-                             "HBO_dist_alt.Rds"))
+                             "HBO_dist_alt_power.Rds"))
 
 #HBW
 HBW_dist_alt <- readRDS(here("alternative",
                              "data",
-                             "HBW_dist_alt.Rds"))
+                             "HBW_dist_alt_power.Rds"))
 
 #NHB
 NHB_dist_alt <- readRDS(here("alternative",
                              "data",
-                             "NHB_dist_alt.Rds"))
+                             "NHB_dist_alt_power.Rds"))
 
 
 
@@ -480,11 +605,11 @@ HBO_dist_alt <- grvty_balancing(od_zones = zones_alt,
                             friction_d_id = "toId",
                             friction_factor = "F_HBO",
                             tolerance = 5,
-                            max_iter = 50000)
+                            max_iter = 25000)
 
 saveRDS(HBO_dist_alt, here("alternative",
                        "data",
-                       "HBO_dist_alt.Rds"))
+                       "HBO_dist_alt_power.Rds"))
 
 
 #HBW travel flows
@@ -497,13 +622,13 @@ HBW_dist_alt <- grvty_balancing(od_zones = zones_alt,
                             friction_d_id = "toId",
                             friction_factor = "F_HBW",
                             tolerance = 5,
-                            max_iter = 50000)
+                            max_iter = 25000)
 
 table(HBW_dist$flows$flow > 0)
 
 saveRDS(HBW_dist_alt, here("alternative",
                        "data",
-                       "HBW_dist_alt.Rds"))
+                       "HBW_dist_alt_power.Rds"))
 
 
 #NHB travel flows
@@ -516,13 +641,13 @@ NHB_dist_alt <- grvty_balancing(od_zones = zones_alt,
                             friction_d_id = "toId",
                             friction_factor = "F_NHB",
                             tolerance = 5,
-                            max_iter = 50000)
+                            max_iter = 25000)
 
 table(NHB_dist$flows$flow > 0)
 
 saveRDS(NHB_dist_alt, here("alternative",
                        "data",
-                       "NHB_dist_alt.Rds"))
+                       "NHB_dist_alt_power.Rds"))
 
 
 
