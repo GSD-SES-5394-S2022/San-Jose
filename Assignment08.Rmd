@@ -598,60 +598,60 @@ NHB_dist_alt <- readRDS(here("alternative",
 # following chunk not necessary unless changing friction factors
 ```{r}
 #HBO travel flows
-HBO_dist_alt <- grvty_balancing(od_zones = zones_alt,
-                            friction = skims_alt,
-                            zone_id = "GEOID",
-                            zone_o = "hbo_prod",
-                            zone_d = "hbo_attr_bal",
-                            friction_o_id = "fromId",
-                            friction_d_id = "toId",
-                            friction_factor = "F_HBO",
-                            tolerance = 5,
-                            max_iter = 25000)
-
-saveRDS(HBO_dist_alt, here("alternative",
-                       "data",
-                       "HBO_dist_alt_power.Rds"))
-
-
-#HBW travel flows
-HBW_dist_alt <- grvty_balancing(od_zones = zones_alt,
-                            friction = skims_alt,
-                            zone_id = "GEOID",
-                            zone_o = "hbw_prod",
-                            zone_d = "hbw_attr_bal",
-                            friction_o_id = "fromId",
-                            friction_d_id = "toId",
-                            friction_factor = "F_HBW",
-                            tolerance = 5,
-                            max_iter = 25000)
-
-table(HBW_dist$flows$flow > 0)
-
-saveRDS(HBW_dist_alt, here("alternative",
-                       "data",
-                       "HBW_dist_alt_power.Rds"))
-
-
-#NHB travel flows
-NHB_dist_alt <- grvty_balancing(od_zones = zones_alt,
-                            friction = skims_alt,
-                            zone_id = "GEOID",
-                            zone_o = "nhb_prod",
-                            zone_d = "nhb_attr_bal",
-                            friction_o_id = "fromId",
-                            friction_d_id = "toId",
-                            friction_factor = "F_NHB",
-                            tolerance = 5,
-                            max_iter = 25000)
-
-table(NHB_dist$flows$flow > 0)
-
-saveRDS(NHB_dist_alt, here("alternative",
-                       "data",
-                       "NHB_dist_alt_power.Rds"))
-
-
+# HBO_dist_alt <- grvty_balancing(od_zones = zones_alt,
+#                             friction = skims_alt,
+#                             zone_id = "GEOID",
+#                             zone_o = "hbo_prod",
+#                             zone_d = "hbo_attr_bal",
+#                             friction_o_id = "fromId",
+#                             friction_d_id = "toId",
+#                             friction_factor = "F_HBO",
+#                             tolerance = 5,
+#                             max_iter = 25000)
+# 
+# saveRDS(HBO_dist_alt, here("alternative",
+#                        "data",
+#                        "HBO_dist_alt_power.Rds"))
+# 
+# 
+# #HBW travel flows
+# HBW_dist_alt <- grvty_balancing(od_zones = zones_alt,
+#                             friction = skims_alt,
+#                             zone_id = "GEOID",
+#                             zone_o = "hbw_prod",
+#                             zone_d = "hbw_attr_bal",
+#                             friction_o_id = "fromId",
+#                             friction_d_id = "toId",
+#                             friction_factor = "F_HBW",
+#                             tolerance = 5,
+#                             max_iter = 25000)
+# 
+# table(HBW_dist$flows$flow > 0)
+# 
+# saveRDS(HBW_dist_alt, here("alternative",
+#                        "data",
+#                        "HBW_dist_alt_power.Rds"))
+# 
+# 
+# #NHB travel flows
+# NHB_dist_alt <- grvty_balancing(od_zones = zones_alt,
+#                             friction = skims_alt,
+#                             zone_id = "GEOID",
+#                             zone_o = "nhb_prod",
+#                             zone_d = "nhb_attr_bal",
+#                             friction_o_id = "fromId",
+#                             friction_d_id = "toId",
+#                             friction_factor = "F_NHB",
+#                             tolerance = 5,
+#                             max_iter = 25000)
+# 
+# table(NHB_dist$flows$flow > 0)
+# 
+# saveRDS(NHB_dist_alt, here("alternative",
+#                        "data",
+#                        "NHB_dist_alt_power.Rds"))
+# 
+# 
 
 ```
 
