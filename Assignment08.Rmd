@@ -227,7 +227,7 @@ NHTS data. Looking at the
 ```
 
 
-# Compare caluclated times to observed times
+# Compare calculated times to observed times
 
 ```{r}
 
@@ -421,8 +421,9 @@ ggplot(desire_lines_one_zone_HBO) +
   geom_curve(data = desire_lines_coord_HBO,
              aes(x = X, y = Y, xend = X.1, yend = Y.1, 
                  alpha = flow,
-                 color = flow), curvature = .2, show.legend = F) +
+                 color = flow), curvature = .2) +
   scale_color_viridis_c(option = "C") +
+  scale_alpha(guide = "none") +
   theme_void()
 
 #zoom in on downtown for more clarity
@@ -654,6 +655,80 @@ saveRDS(NHB_dist_alt, here("alternative",
 
 ```
 
+
+# Compare calculated times to observed times
+
+```{r}
+
+
+#HBO existing
+
+HBO_flows_alt <- HBO_dist_alt$flows %>%
+  rename(fromId = o_id,
+         toId = d_id,
+         HBO_flow = flow)
+
+skims_alt <- skims_alt %>%
+  left_join(HBO_flows_alt, by = c("fromId", "toId")) %>%
+  replace_na(list(HBO_flow = 0)) %>%
+  mutate(HBO_total_time = HBO_flow * min_time)
+
+HBO_mean_time_alt <- sum(skims_alt$HBO_total_time) / sum(skims_alt$HBO_flow)
+
+
+
+#HBW existing
+
+HBW_flows_alt <- HBW_dist_alt$flows %>%
+  rename(fromId = o_id,
+         toId = d_id,
+         HBW_flow = flow)
+
+skims_alt <- skims_alt %>%
+  left_join(HBW_flows_alt, by = c("fromId", "toId")) %>%
+  replace_na(list(HBW_flow = 0)) %>%
+  mutate(HBW_total_time = HBW_flow * min_time)
+
+HBW_mean_time_alt <- sum(skims_alt$HBW_total_time) / sum(skims_alt$HBW_flow)
+
+
+
+#NHB existing
+
+NHB_flows_alt <- NHB_dist_alt$flows %>%
+  rename(fromId = o_id,
+         toId = d_id,
+         NHB_flow = flow)
+
+skims_alt <- skims_alt %>%
+  left_join(NHB_flows_alt, by = c("fromId", "toId")) %>%
+  replace_na(list(NHB_flow = 0)) %>%
+  mutate(NHB_total_time = NHB_flow * min_time)
+
+NHB_mean_time_alt <- sum(skims_alt$NHB_total_time) / sum(skims_alt$NHB_flow)
+
+
+
+
+```
+
+## Check averages
+
+```{r}
+ttime_by_purpose
+
+HBO_mean_time_alt
+
+HBW_mean_time_alt
+
+NHB_mean_time_alt
+
+
+```
+
+
+
+
 # Map desire lines
 
 ```{r}
@@ -803,7 +878,7 @@ ggplot(desire_lines_one_zone_HBO_alt) +
 
 ```{r}
 
-desire_lines_coord_all <- desire_lines_coord_all %>%
+desire_lines_coord_all_combined <- desire_lines_coord_all %>%
   as.data.frame() %>%
   full_join(desire_lines_coord_all_alt %>%
               as.data.frame(),
@@ -813,12 +888,16 @@ desire_lines_coord_all <- desire_lines_coord_all %>%
          nhb_flow_dif = (nhb_flow_alt - nhb_flow) / nhb_flow) %>%
   st_as_sf()
 
+```
+
+```{r}
+
 # Plot % difference in HBO trips
-ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbo_flow_dif),]) +
+ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hbo_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
-                 color = hbo_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all$hbo_flow_dif > 0 &
-                                                                             desire_lines_coord_all$hbo_flow_dif < .4,
+                 color = hbo_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all_combined$hbo_flow_dif > 0 &
+                                                                             desire_lines_coord_all_combined$hbo_flow_dif < .2,
                                                                            .1, 1)) +
   # coord_sf(xlim = c(left_side, right_side),
   #          ylim = c(bottom_side, top_side)) +
@@ -829,10 +908,10 @@ ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbo_flow_dif),]) +
 
 
 # Plot % difference in HBW trips
-ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbw_flow_dif),]) +
-  geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
+ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hbw_flow_dif),]) +
+  geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey45") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
-                 color = hbw_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all$hbw_flow_dif > -.1, .2, 1)) +
+                 color = hbw_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all_combined$hbw_flow_dif > -.15, .2, 1)) +
   # coord_sf(xlim = c(left_side, right_side),
   #          ylim = c(bottom_side, top_side)) +
   scale_color_gradient2(low = "red", mid = "grey60", high = "limegreen",
@@ -842,11 +921,11 @@ ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$hbw_flow_dif),]) +
 
 
 # Plot % difference in NHB trips
-ggplot(desire_lines_coord_all[order(-desire_lines_coord_all$nhb_flow_dif),]) +
+ggplot(desire_lines_coord_all_combined[order(desire_lines_coord_all_combined$nhb_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
-                 color = nhb_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all$hbo_flow_dif > 0 &
-                                                                             desire_lines_coord_all$hbo_flow_dif < .4,
+                 color = nhb_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all_combined$hbo_flow_dif > 0 &
+                                                                             desire_lines_coord_all_combined$hbo_flow_dif < .25,
                                                                            .1, 1)) +
   # coord_sf(xlim = c(left_side, right_side),
   #          ylim = c(bottom_side, top_side)) +
