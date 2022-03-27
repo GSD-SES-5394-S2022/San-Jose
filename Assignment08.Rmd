@@ -169,58 +169,58 @@ NHTS data. Looking at the
 
 ```{r}
 #HBO travel flows
-HBO_dist <- grvty_balancing(od_zones = zones,
-                            friction = skims,
-                            zone_id = "GEOID",
-                            zone_o = "hbo_prod",
-                            zone_d = "hbo_attr_bal",
-                            friction_o_id = "fromId",
-                            friction_d_id = "toId",
-                            friction_factor = "F_HBO",
-                            tolerance = 5,
-                            max_iter = 25000)
-
-saveRDS(HBO_dist, here("existing",
-                       "data",
-                       "HBO_dist_power.Rds"))
-
-
-#HBW travel flows
-HBW_dist <- grvty_balancing(od_zones = zones,
-                            friction = skims,
-                            zone_id = "GEOID",
-                            zone_o = "hbw_prod",
-                            zone_d = "hbw_attr_bal",
-                            friction_o_id = "fromId",
-                            friction_d_id = "toId",
-                            friction_factor = "F_HBW",
-                            tolerance = 5,
-                            max_iter = 25000)
-
-table(HBW_dist$flows$flow > 0)
-
-saveRDS(HBW_dist, here("existing",
-                       "data",
-                       "HBW_dist_power.Rds"))
-
-
-#NHB travel flows
-NHB_dist <- grvty_balancing(od_zones = zones,
-                            friction = skims,
-                            zone_id = "GEOID",
-                            zone_o = "nhb_prod",
-                            zone_d = "nhb_attr_bal",
-                            friction_o_id = "fromId",
-                            friction_d_id = "toId",
-                            friction_factor = "F_NHB",
-                            tolerance = 5,
-                            max_iter = 25000)
-
-table(NHB_dist$flows$flow > 0)
-
-saveRDS(NHB_dist, here("existing",
-                       "data",
-                       "NHB_dist.Rds"))
+# HBO_dist <- grvty_balancing(od_zones = zones,
+#                             friction = skims,
+#                             zone_id = "GEOID",
+#                             zone_o = "hbo_prod",
+#                             zone_d = "hbo_attr_bal",
+#                             friction_o_id = "fromId",
+#                             friction_d_id = "toId",
+#                             friction_factor = "F_HBO",
+#                             tolerance = 5,
+#                             max_iter = 25000)
+# 
+# saveRDS(HBO_dist, here("existing",
+#                        "data",
+#                        "HBO_dist_power.Rds"))
+# 
+# 
+# #HBW travel flows
+# HBW_dist <- grvty_balancing(od_zones = zones,
+#                             friction = skims,
+#                             zone_id = "GEOID",
+#                             zone_o = "hbw_prod",
+#                             zone_d = "hbw_attr_bal",
+#                             friction_o_id = "fromId",
+#                             friction_d_id = "toId",
+#                             friction_factor = "F_HBW",
+#                             tolerance = 5,
+#                             max_iter = 25000)
+# 
+# table(HBW_dist$flows$flow > 0)
+# 
+# saveRDS(HBW_dist, here("existing",
+#                        "data",
+#                        "HBW_dist_power.Rds"))
+# 
+# 
+# #NHB travel flows
+# NHB_dist <- grvty_balancing(od_zones = zones,
+#                             friction = skims,
+#                             zone_id = "GEOID",
+#                             zone_o = "nhb_prod",
+#                             zone_d = "nhb_attr_bal",
+#                             friction_o_id = "fromId",
+#                             friction_d_id = "toId",
+#                             friction_factor = "F_NHB",
+#                             tolerance = 5,
+#                             max_iter = 25000)
+# 
+# table(NHB_dist$flows$flow > 0)
+# 
+# saveRDS(NHB_dist, here("existing",
+#                        "data",
+#                        "NHB_dist_power.Rds"))
 
 
 
@@ -416,13 +416,13 @@ desire_lines_coord_all <- desire_lines_one_zone_all %>%
 
 ggplot(desire_lines_one_zone_HBO) +
   # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
-  geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
   geom_curve(data = desire_lines_coord_HBO,
              aes(x = X, y = Y, xend = X.1, yend = Y.1, 
                  alpha = flow,
                  color = flow), curvature = .2, show.legend = F) +
-  scale_color_viridis_b(option = "C") +
+  scale_color_viridis_c(option = "C") +
   theme_void()
 
 #zoom in on downtown for more clarity
@@ -432,7 +432,7 @@ top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$yma
 bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymin
 
 ggplot(desire_lines_one_zone_HBO) +
-  geom_sf(data = zone_boundaries, fill = "black", color = alpha("white", .1), size = .1) +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
   geom_curve(data = desire_lines_coord_HBO,
              aes(x = X, y = Y, xend = X.1, yend = Y.1, 
@@ -440,9 +440,10 @@ ggplot(desire_lines_one_zone_HBO) +
                  color = flow), curvature = .2) +
   coord_sf(xlim = c(left_side, right_side),
            ylim = c(bottom_side, top_side)) +
-  scale_color_viridis_b(option = "C",
+  scale_color_viridis_c(option = "C",
                         name = "Trip Flow",
-                        labels = c("3,000","6,000","9,000")) +
+                        # labels = c("3,000","6,000","9,000")
+                        ) +
   scale_alpha(guide = 'none') +
   theme_void()
 
