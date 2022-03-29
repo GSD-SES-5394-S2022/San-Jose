@@ -436,10 +436,8 @@ desire_lines_coord_all <- desire_lines_one_zone_all %>%
 ## Plots
 
 ```{r}
-
-
-
-ggplot(desire_lines_one_zone_HBO) +
+#HBO
+HBO_one_zone <- ggplot(desire_lines_one_zone_HBO) +
   # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
   geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
@@ -451,13 +449,15 @@ ggplot(desire_lines_one_zone_HBO) +
   scale_alpha(guide = "none") +
   theme_void()
 
+ggsave("graphics/A8_HBO_one_zone.png", HBO_one_zone, device = "png")
+
 #zoom in on downtown for more clarity
 left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmin - .01
 right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$xmax + .01
 top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymax
 bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction))$ymin
 
-ggplot(desire_lines_one_zone_HBO) +
+HBO_one_zone_zoom <- ggplot(desire_lines_one_zone_HBO) +
   geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
   geom_curve(data = desire_lines_coord_HBO,
@@ -473,8 +473,87 @@ ggplot(desire_lines_one_zone_HBO) +
   scale_alpha(guide = 'none') +
   theme_void()
 
+ggsave("graphics/A8_HBO_one_zone_zoom.png", HBO_one_zone_zoom, device = "png")
 
+#NHB
 
+NHB_one_zone <- ggplot(desire_lines_one_zone_NHB) +
+  # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_NHB,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  scale_color_viridis_c(option = "C") +
+  scale_alpha(guide = "none") +
+  theme_void()
+
+ggsave("graphics/A8_NHB_one_zone.png", NHB_one_zone, device = "png")
+
+#zoom in on downtown for more clarity
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction))$ymin
+
+NHB_one_zone_zoom <- ggplot(desire_lines_one_zone_NHB) +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_NHB,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side)) +
+  scale_color_viridis_c(option = "C",
+                        name = "Trip Flow",
+                        # labels = c("3,000","6,000","9,000")
+                        ) +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+ggsave("graphics/A8_NHB_one_zone_zoom.png", NHB_one_zone_zoom, device = "png")
+
+#HBW
+
+HBW_one_zone <- ggplot(desire_lines_one_zone_HBW) +
+  # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBW,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  scale_color_viridis_c(option = "C") +
+  scale_alpha(guide = "none") +
+  theme_void()
+
+ggsave("graphics/A8_HBW_one_zone.png", HBW_one_zone, device = "png")
+
+#zoom in on downtown for more clarity
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction))$ymin
+
+HBW_one_zone_zoom <- ggplot(desire_lines_one_zone_HBW) +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBW,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side)) +
+  scale_color_viridis_c(option = "C",
+                        name = "Trip Flow",
+                        # labels = c("3,000","6,000","9,000")
+                        ) +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+ggsave("graphics/A8_HBW_one_zone_zoom.png", HBW_one_zone_zoom, device = "png")
 
 ```
 
@@ -858,9 +937,14 @@ desire_lines_coord_all_alt <- desire_lines_one_zone_all_alt %>%
           .[!c(TRUE,FALSE),]) %>%
   cbind(desire_lines_one_zone_all_alt)
 
+```
 
+# Plots - Alternative
 
-ggplot(desire_lines_one_zone_HBO_alt) +
+```{r}
+
+#HBO
+HBO_one_zone_alt <- ggplot(desire_lines_one_zone_HBO_alt) +
   # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
   geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
@@ -873,13 +957,15 @@ ggplot(desire_lines_one_zone_HBO_alt) +
   scale_alpha(guide = 'none') +
   theme_void()
 
+ggsave("graphics/A8_HBO_one_zone_alt.png", HBO_one_zone_alt, device = "png")
+
 #zoom in on downtown for more clarity
 left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$xmin - .01
 right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$xmax + .01
 top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$ymax
 bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBO_big_attraction_alt))$ymin
 
-ggplot(desire_lines_one_zone_HBO_alt) +
+HBO_one_zone_alt_zoom <- ggplot(desire_lines_one_zone_HBO_alt) +
   geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
   geom_sf(color = NA) +
   geom_curve(data = desire_lines_coord_HBO_alt,
@@ -895,9 +981,91 @@ ggplot(desire_lines_one_zone_HBO_alt) +
   scale_alpha(guide = 'none') +
   theme_void()
 
+ggsave("graphics/A8_HBO_one_zone_alt_zoom.png", HBO_one_zone_alt_zoom, device = "png")
 
+#NHB
 
+NHB_one_zone_alt <- ggplot(desire_lines_one_zone_NHB_alt) +
+  # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_NHB_alt,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  scale_color_viridis_c(option = "C",
+                        name = "Trip Flow") +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+ggsave("graphics/A8_NHB_one_zone_alt.png", NHB_one_zone_alt, device = "png")
+
+#zoom in on downtown for more clarity
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction_alt))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction_alt))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction_alt))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == NHB_big_attraction_alt))$ymin
+
+NHB_one_zone_alt_zoom <- ggplot(desire_lines_one_zone_NHB_alt) +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_NHB_alt,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side)) +
+  scale_color_viridis_c(option = "C",
+                        name = "Trip Flow",
+                        # labels = c("3,000","6,000","9,000")
+                        ) +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+ggsave("graphics/A8_NHB_one_zone_alt_zoom.png", NHB_one_zone_alt_zoom, device = "png")
+
+#HBW
+
+HBW_one_zone_alt <- ggplot(desire_lines_one_zone_HBW_alt) +
+  # annotation_map_tile(type = "cartolight", zoom = 11, progress = "none") +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBW_alt,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  scale_color_viridis_c(option = "C",
+                        name = "Trip Flow") +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+ggsave("graphics/A8_HBW_one_zone_alt.png", HBW_one_zone_alt, device = "png")
+
+#zoom in on downtown for more clarity
+left_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction_alt))$xmin - .01
+right_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction_alt))$xmax + .01
+top_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction_alt))$ymax
+bottom_side <- st_bbox(zone_boundaries %>% filter(GEOID == HBW_big_attraction_alt))$ymin
+
+HBW_one_zone_alt_zoom <- ggplot(desire_lines_one_zone_HBW_alt) +
+  geom_sf(data = zone_boundaries, fill = "grey35", color = alpha("white", .1), size = .1) +
+  geom_sf(color = NA) +
+  geom_curve(data = desire_lines_coord_HBW_alt,
+             aes(x = X, y = Y, xend = X.1, yend = Y.1, 
+                 alpha = flow,
+                 color = flow), curvature = .2) +
+  coord_sf(xlim = c(left_side, right_side),
+           ylim = c(bottom_side, top_side)) +
+  scale_color_viridis_c(option = "C",
+                        name = "Trip Flow",
+                        # labels = c("3,000","6,000","9,000")
+                        ) +
+  scale_alpha(guide = 'none') +
+  theme_void()
+
+ggsave("graphics/A8_HBW_one_zone_alt_zoom.png", HBW_one_zone_alt_zoom, device = "png")
 ```
+
 
 # Differences Between Existing and Alternative
 
@@ -918,7 +1086,7 @@ desire_lines_coord_all_combined <- desire_lines_coord_all %>%
 ```{r}
 
 # Plot % difference in HBO trips
-ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hbo_flow_dif),]) +
+diff_HBO <- ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hbo_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
                  color = hbo_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all_combined$hbo_flow_dif > 0 &
@@ -931,9 +1099,10 @@ ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hb
   # scale_alpha(guide = 'none') +
   theme_void()
 
+ggsave("graphics/A8_diff_HBO.png", diff_HBO, device = "png")
 
 # Plot % difference in HBW trips
-ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hbw_flow_dif),]) +
+diff_HBW <- ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hbw_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey45") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
                  color = hbw_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all_combined$hbw_flow_dif > -.15, .2, 1)) +
@@ -944,9 +1113,10 @@ ggplot(desire_lines_coord_all_combined[order(-desire_lines_coord_all_combined$hb
   # scale_alpha(guide = 'none') +
   theme_void()
 
+ggsave("graphics/A8_diff_HBW.png", diff_HBW, device = "png")
 
 # Plot % difference in NHB trips
-ggplot(desire_lines_coord_all_combined[order(desire_lines_coord_all_combined$nhb_flow_dif),]) +
+diff_NHB <- ggplot(desire_lines_coord_all_combined[order(desire_lines_coord_all_combined$nhb_flow_dif),]) +
   geom_sf(data = zone_boundaries, color = alpha("black", .3), fill = "grey35") +
   geom_curve(aes(x = X, y = Y, xend = X.1, yend = Y.1,
                  color = nhb_flow_dif*100), curvature = .2, alpha = ifelse(desire_lines_coord_all_combined$hbo_flow_dif > 0 &
@@ -959,9 +1129,7 @@ ggplot(desire_lines_coord_all_combined[order(desire_lines_coord_all_combined$nhb
   # scale_alpha(guide = 'none') +
   theme_void()
 
-
-
-
+ggsave("graphics/A8_diff_NHB.png", diff_NHB, device = "png")
 
 ```
 
