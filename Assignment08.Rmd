@@ -295,6 +295,31 @@ HBW_mean_time
 NHB_mean_time
 
 
+
+convergence_points <- HBO_dist$convergence %>%
+  mutate(max_diff = max_o_diff + max_d_diff) %>%
+  mutate(which_max = ifelse(max_o_diff > max_d_diff, 
+                            "Productions",
+                            "Attractions"))
+
+ggplot(convergence_points) +
+  geom_line(aes(x = iteration, y = max_diff, lty = which_max)) +
+  scale_y_continuous(name = "Maximum difference from target value",
+                     trans = "log", 
+                     breaks = breaks <- 10^seq(1,5, by=1),
+                     labels = formatC(breaks, 
+                                      big.mark = ",", 
+                                      format = "f", 
+                                      digits = 0)) +
+  scale_x_continuous(name = "Iteration",
+                     breaks = breaks <- seq(0, 25000, by=2000),
+                     labels = formatC(breaks, 
+                                      big.mark = ",", 
+                                      format = "f", 
+                                      digits = 0)) +
+  scale_linetype(name = "") +
+  theme_minimal()
+
 ```
 
 
