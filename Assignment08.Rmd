@@ -106,10 +106,10 @@ skims <- skims %>%
 
 
 #Large MPO 2
-# skims <- skims %>%
-#   mutate(F_HBW = min_time^-1.65*exp(-0.0398*min_time),
-#          F_HBO = min_time^-1.51*exp(-0.018*min_time),
-#          F_NHB = min_time^-1.94*exp(-0.116*min_time))
+skims <- skims %>%
+  mutate(F_HBW = min_time^-1.65*exp(-0.0398*min_time),
+         F_HBO = min_time^-1.51*exp(-0.018*min_time),
+         F_NHB = min_time^-1.94*exp(-0.116*min_time))
 
 
 ```
@@ -177,8 +177,8 @@ NHTS data. Looking at the
 #                             friction_o_id = "fromId",
 #                             friction_d_id = "toId",
 #                             friction_factor = "F_HBO",
-#                             tolerance = 5,
-#                             max_iter = 25000)
+#                             tolerance = .001,
+#                             max_iter = 100000)
 # 
 # saveRDS(HBO_dist, here("existing",
 #                        "data",
@@ -194,8 +194,8 @@ NHTS data. Looking at the
 #                             friction_o_id = "fromId",
 #                             friction_d_id = "toId",
 #                             friction_factor = "F_HBW",
-#                             tolerance = 5,
-#                             max_iter = 25000)
+#                             tolerance = .001,
+#                             max_iter = 100000)
 # 
 # table(HBW_dist$flows$flow > 0)
 # 
@@ -213,15 +213,15 @@ NHTS data. Looking at the
 #                             friction_o_id = "fromId",
 #                             friction_d_id = "toId",
 #                             friction_factor = "F_NHB",
-#                             tolerance = 5,
-#                             max_iter = 25000)
+#                             tolerance = .001,
+#                             max_iter = 100000)
 # 
 # table(NHB_dist$flows$flow > 0)
 # 
 # saveRDS(NHB_dist, here("existing",
 #                        "data",
 #                        "NHB_dist_power.Rds"))
-
+# 
 
 
 ```
@@ -296,7 +296,7 @@ NHB_mean_time
 
 
 
-convergence_points <- HBO_dist$convergence %>%
+convergence_points <- HBW_dist$convergence %>%
   mutate(max_diff = max_o_diff + max_d_diff) %>%
   mutate(which_max = ifelse(max_o_diff > max_d_diff, 
                             "Productions",
@@ -312,7 +312,7 @@ ggplot(convergence_points) +
                                       format = "f", 
                                       digits = 0)) +
   scale_x_continuous(name = "Iteration",
-                     breaks = breaks <- seq(0, 25000, by=2000),
+                     breaks = breaks <- seq(0, 100000, by=2000),
                      labels = formatC(breaks, 
                                       big.mark = ",", 
                                       format = "f", 
