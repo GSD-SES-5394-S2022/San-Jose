@@ -83,7 +83,7 @@ cost_per_minute
 ```{r}
 skims <- here("existing",
               "data",
-              "skims2.csv") %>%
+              "skims.csv") %>%
   read_csv(show_col_types = FALSE)
 
 head(skims, 5) %>%
