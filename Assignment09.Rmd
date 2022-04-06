@@ -83,7 +83,7 @@ cost_per_minute
 ```{r}
 skims <- here("existing",
               "data",
-              "skims.csv") %>%
+              "skims2.csv") %>%
   read_csv(show_col_types = FALSE)
 
 head(skims, 5) %>%
@@ -343,3 +343,453 @@ skims <- skims %>%
 ```
 
 ## Probability of each mode
+
+```{r}
+skims <- skims %>%
+  mutate(p_transit_HBO = exp(utility_transit_HBO) / total_utility_HBO,
+         p_car_HBO = exp(utility_car_HBO) / total_utility_HBO,
+         p_active_HBO = exp(utility_active_HBO) / total_utility_HBO,
+         p_transit_HBW = exp(utility_transit_HBW) / total_utility_HBW,
+         p_car_HBW = exp(utility_car_HBW) / total_utility_HBW,
+         p_active_HBW = exp(utility_active_HBW) / total_utility_HBW,
+         p_transit_NHB = exp(utility_transit_NHB) / total_utility_NHB,
+         p_car_NHB = exp(utility_car_NHB) / total_utility_NHB,
+         p_active_NHB = exp(utility_active_NHB) / total_utility_NHB) 
+
+# calculate probability that car travelers use SOV vs HOV
+skims <- skims %>%
+  mutate(p_SOV_if_car_HBO = exp(utility_SOV_HBO) / exp(utility_car_HBO),
+         p_HOV_if_car_HBO = exp(utility_HOV_HBO) / exp(utility_car_HBO),
+         p_walk_if_active_HBO = exp(utility_walk_HBO) / exp(utility_active_HBO),
+         p_bike_if_active_HBO = exp(utility_bike_HBO) / exp(utility_active_HBO),
+         p_SOV_if_car_HBW = exp(utility_SOV_HBW) / exp(utility_car_HBW),
+         p_HOV_if_car_HBW = exp(utility_HOV_HBW) / exp(utility_car_HBW),
+         p_walk_if_active_HBW = exp(utility_walk_HBW) / exp(utility_active_HBW),
+         p_bike_if_active_HBW = exp(utility_bike_HBW) / exp(utility_active_HBW),
+         p_SOV_if_car_NHB = exp(utility_SOV_NHB) / exp(utility_car_NHB),
+         p_HOV_if_car_NHB = exp(utility_HOV_NHB) / exp(utility_car_NHB),
+         p_walk_if_active_NHB = exp(utility_walk_NHB) / exp(utility_active_NHB),
+         p_bike_if_active_NHB = exp(utility_bike_NHB) / exp(utility_active_NHB))
+
+# probability of modes within nests
+skims <- skims %>%
+  mutate(p_SOV_HBO = p_SOV_if_car_HBO * p_car_HBO,
+         p_HOV_HBO = p_HOV_if_car_HBO * p_car_HBO,
+         p_walk_HBO = p_walk_if_active_HBO * p_active_HBO,
+         p_bike_HBO = p_bike_if_active_HBO * p_active_HBO,
+         p_SOV_HBW = p_SOV_if_car_HBW * p_car_HBW,
+         p_HOV_HBW = p_HOV_if_car_HBW * p_car_HBW,
+         p_walk_HBW = p_walk_if_active_HBW * p_active_HBW,
+         p_bike_HBW = p_bike_if_active_HBW * p_active_HBW,
+         p_SOV_NHB = p_SOV_if_car_NHB * p_car_NHB,
+         p_HOV_NHB = p_HOV_if_car_NHB * p_car_NHB,
+         p_walk_NHB = p_walk_if_active_NHB * p_active_NHB,
+         p_bike_NHB = p_bike_if_active_NHB * p_active_NHB)
+
+
+```
+
+
+# Number of trips by mode
+
+```{r}
+
+# HBO
+skims <- skims %>%
+  mutate(n_transit_HBO = round(HBO_flow * p_transit_HBO),
+         n_SOV_HBO = round(HBO_flow * p_SOV_HBO),
+         n_HOV_HBO = round(HBO_flow * p_HOV_HBO),
+         n_walk_HBO = round(HBO_flow * p_walk_HBO),
+         n_bike_HBO = round(HBO_flow * p_bike_HBO)) %>%
+  replace_na(list(n_transit_HBO = 0,
+                  n_SOV_HBO = 0,
+                  n_HOV_HBO = 0,
+                  n_walk_HBO = 0,
+                  n_bike_HBO =0))
+
+#HBW
+skims <- skims %>%
+  mutate(n_transit_HBW = round(HBW_flow * p_transit_HBW),
+         n_SOV_HBW = round(HBW_flow * p_SOV_HBW),
+         n_HOV_HBW = round(HBW_flow * p_HOV_HBW),
+         n_walk_HBW = round(HBW_flow * p_walk_HBW),
+         n_bike_HBW = round(HBW_flow * p_bike_HBW)) %>%
+  replace_na(list(n_transit_HBW = 0,
+                  n_SOV_HBW = 0,
+                  n_HOV_HBW = 0,
+                  n_walk_HBW = 0,
+                  n_bike_HBW =0))
+
+#NHB
+skims <- skims %>%
+  mutate(n_transit_NHB = round(NHB_flow * p_transit_NHB),
+         n_SOV_NHB = round(NHB_flow * p_SOV_NHB),
+         n_HOV_NHB = round(NHB_flow * p_HOV_NHB),
+         n_walk_NHB = round(NHB_flow * p_walk_NHB),
+         n_bike_NHB = round(NHB_flow * p_bike_NHB)) %>%
+  replace_na(list(n_transit_NHB = 0,
+                  n_SOV_NHB = 0,
+                  n_HOV_NHB = 0,
+                  n_walk_NHB = 0,
+                  n_bike_NHB =0))
+
+
+```
+
+# Calculate regional mode shares and compare to survey data
+
+```{r}
+
+#HBO
+HBO_modeled_mode_by_purpose_1 <- tibble(
+  purpose = "HBO_model 1", 
+  pct_bike = sum(skims$n_bike_HBO) / 
+                 sum(skims$HBO_flow),
+  pct_SOV = sum(skims$n_SOV_HBO) / 
+                sum(skims$HBO_flow),
+  pct_HOV = sum(skims$n_HOV_HBO) / 
+                sum(skims$HBO_flow),
+  pct_transit = sum(skims$n_transit_HBO) / 
+                sum(skims$HBO_flow),
+  pct_walk = sum(skims$n_walk_HBO) / 
+                sum(skims$HBO_flow))
+
+HBO_model_compare <- rbind(mode_by_purpose, HBO_modeled_mode_by_purpose_1) 
+
+HBO_model_compare
+
+#HBW
+HBW_modeled_mode_by_purpose_1 <- tibble(
+  purpose = "HBW_model 1", 
+  pct_bike = sum(skims$n_bike_HBW) / 
+                 sum(skims$HBW_flow),
+  pct_SOV = sum(skims$n_SOV_HBW) / 
+                sum(skims$HBW_flow),
+  pct_HOV = sum(skims$n_HOV_HBW) / 
+                sum(skims$HBW_flow),
+  pct_transit = sum(skims$n_transit_HBW) / 
+                sum(skims$HBW_flow),
+  pct_walk = sum(skims$n_walk_HBW) / 
+                sum(skims$HBW_flow))
+
+HBW_model_compare <- rbind(mode_by_purpose, HBW_modeled_mode_by_purpose_1) 
+
+HBW_model_compare
+
+#NHB
+NHB_modeled_mode_by_purpose_1 <- tibble(
+  purpose = "NHB_model 1", 
+  pct_bike = sum(skims$n_bike_NHB) / 
+                 sum(skims$NHB_flow),
+  pct_SOV = sum(skims$n_SOV_NHB) / 
+                sum(skims$NHB_flow),
+  pct_HOV = sum(skims$n_HOV_NHB) / 
+                sum(skims$NHB_flow),
+  pct_transit = sum(skims$n_transit_NHB) / 
+                sum(skims$NHB_flow),
+  pct_walk = sum(skims$n_walk_NHB) / 
+                sum(skims$NHB_flow))
+
+model_compare <- rbind(mode_by_purpose, 
+                           HBO_modeled_mode_by_purpose_1,
+                           HBW_modeled_mode_by_purpose_1,
+                           NHB_modeled_mode_by_purpose_1
+                           ) 
+
+model_compare
+
+
+# HBO
+SOV_const_HBO 
+HOV_const_HBO 
+transit_const_HBO 
+walk_const_HBO 
+bike_const_HBO
+
+# HBW
+SOV_const_HBW 
+HOV_const_HBW 
+transit_const_HBW 
+walk_const_HBW 
+bike_const_HBW
+
+
+# NHB
+SOV_const_NHB 
+HOV_const_NHB 
+transit_const_NHB 
+walk_const_NHB 
+bike_const_NHB
+```
+
+
+calibrate
+```{r}
+#HBO
+#bike - model needs to be bigger, 
+
+
+transit_const_HBO  <- 0
+SOV_const_HBO <- -1.5
+HOV_const_HBO <- -1.2
+bike_const_HBO <- -3.5
+walk_const_HBO <- -0.5
+
+skims <- skims %>%
+  mutate(utility_transit_HBO = transit_const_HBO +
+                               ride_time * -0.008  +
+                               (access_time + 
+                                 egress_time +
+                                 wait_time +
+                                 transfer_time) * -0.025 +
+                               transit_cost * -0.01,
+         utility_SOV_HBO = SOV_const_HBO +
+                           car_time * -0.008 +
+                           drive_cost * -0.01,
+         utility_HOV_HBO = HOV_const_HBO +
+                           car_time * -0.008 +
+                           carpool_cost * -0.01,
+         utility_walk_HBO = walk_const_HBO +
+                            walk_time * -0.025,
+         utility_bike_HBO = bike_const_HBO +
+                            bike_time * -0.025) %>%
+  mutate(exp_u_walk_HBO = exp(utility_walk_HBO),
+         exp_u_bike_HBO = exp(utility_bike_HBO),
+         exp_u_SOV_HBO = exp(utility_SOV_HBO),
+         exp_u_HOV_HBO = exp(utility_HOV_HBO),
+         exp_u_transit_HBO = exp(utility_transit_HBO)) %>%
+  rowwise() %>%
+  mutate(utility_active_HBO = log(sum(exp_u_walk_HBO, 
+                                          exp_u_bike_HBO, 
+                                          na.rm = TRUE)),
+         utility_car_HBO = log(sum(exp_u_SOV_HBO,
+                                       exp_u_HOV_HBO,
+                                       na.rm = TRUE))) %>%
+  mutate(exp_u_active_HBO = exp(utility_active_HBO),
+         exp_u_car_HBO = exp(utility_car_HBO)) %>%
+  mutate(total_utility_HBO = sum(exp_u_active_HBO, 
+                                 exp_u_car_HBO,
+                                 exp_u_transit_HBO,
+                                 na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(p_transit_HBO = exp(utility_transit_HBO) / total_utility_HBO,
+         p_car_HBO = exp(utility_car_HBO) / total_utility_HBO,
+         p_active_HBO = exp(utility_active_HBO) / total_utility_HBO)  %>%
+  mutate(p_SOV_if_car_HBO = exp(utility_SOV_HBO) / exp(utility_car_HBO),
+         p_HOV_if_car_HBO = exp(utility_HOV_HBO) / exp(utility_car_HBO),
+         p_walk_if_active_HBO = exp(utility_walk_HBO) / exp(utility_active_HBO),
+         p_bike_if_active_HBO = exp(utility_bike_HBO) / exp(utility_active_HBO)) %>%
+  mutate(p_SOV_HBO = p_SOV_if_car_HBO * p_car_HBO,
+         p_HOV_HBO = p_HOV_if_car_HBO * p_car_HBO,
+         p_walk_HBO = p_walk_if_active_HBO * p_active_HBO,
+         p_bike_HBO = p_bike_if_active_HBO * p_active_HBO) %>%
+  mutate(n_transit_HBO = round(HBO_flow * p_transit_HBO),
+         n_SOV_HBO = round(HBO_flow * p_SOV_HBO),
+         n_HOV_HBO = round(HBO_flow * p_HOV_HBO),
+         n_walk_HBO = round(HBO_flow * p_walk_HBO),
+         n_bike_HBO = round(HBO_flow * p_bike_HBO)) %>%
+  replace_na(list(n_transit_HBO = 0,
+                  n_SOV_HBO = 0,
+                  n_HOV_HBO = 0,
+                  n_walk_HBO = 0,
+                  n_bike_HBO =0)) 
+
+
+# HBW
+skims <- skims %>%
+  mutate(utility_transit_HBW = transit_const_HBW +
+                               ride_time * -0.008  +
+                               (access_time + 
+                                 egress_time +
+                                 wait_time +
+                                 transfer_time) * -0.025 +
+                               transit_cost * -0.01,
+         utility_SOV_HBW = SOV_const_HBW +
+                           car_time * -0.008 +
+                           drive_cost * -0.01,
+         utility_HOV_HBW = HOV_const_HBW +
+                           car_time * -0.008 +
+                           carpool_cost * -0.01,
+         utility_walk_HBW = walk_const_HBW +
+                            walk_time * -0.025,
+         utility_bike_HBW = bike_const_HBW +
+                            bike_time * -0.025) %>%
+  mutate(exp_u_walk_HBW = exp(utility_walk_HBW),
+         exp_u_bike_HBW = exp(utility_bike_HBW),
+         exp_u_SOV_HBW = exp(utility_SOV_HBW),
+         exp_u_HOV_HBW = exp(utility_HOV_HBW),
+         exp_u_transit_HBW = exp(utility_transit_HBW)) %>%
+  rowwise() %>%
+  mutate(utility_active_HBW = log(sum(exp_u_walk_HBW, 
+                                          exp_u_bike_HBW, 
+                                          na.rm = TRUE)),
+         utility_car_HBW = log(sum(exp_u_SOV_HBW,
+                                       exp_u_HOV_HBW,
+                                       na.rm = TRUE))) %>%
+  mutate(exp_u_active_HBW = exp(utility_active_HBW),
+         exp_u_car_HBW = exp(utility_car_HBW)) %>%
+  mutate(total_utility_HBW = sum(exp_u_active_HBW, 
+                                 exp_u_car_HBW,
+                                 exp_u_transit_HBW,
+                                 na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(p_transit_HBW = exp(utility_transit_HBW) / total_utility_HBW,
+         p_car_HBW = exp(utility_car_HBW) / total_utility_HBW,
+         p_active_HBW = exp(utility_active_HBW) / total_utility_HBW)  %>%
+  mutate(p_SOV_if_car_HBW = exp(utility_SOV_HBW) / exp(utility_car_HBW),
+         p_HOV_if_car_HBW = exp(utility_HOV_HBW) / exp(utility_car_HBW),
+         p_walk_if_active_HBW = exp(utility_walk_HBW) / exp(utility_active_HBW),
+         p_bike_if_active_HBW = exp(utility_bike_HBW) / exp(utility_active_HBW)) %>%
+  mutate(p_SOV_HBW = p_SOV_if_car_HBW * p_car_HBW,
+         p_HOV_HBW = p_HOV_if_car_HBW * p_car_HBW,
+         p_walk_HBW = p_walk_if_active_HBW * p_active_HBW,
+         p_bike_HBW = p_bike_if_active_HBW * p_active_HBW) %>%
+  mutate(n_transit_HBW = round(HBW_flow * p_transit_HBW),
+         n_SOV_HBW = round(HBW_flow * p_SOV_HBW),
+         n_HOV_HBW = round(HBW_flow * p_HOV_HBW),
+         n_walk_HBW = round(HBW_flow * p_walk_HBW),
+         n_bike_HBW = round(HBW_flow * p_bike_HBW)) %>%
+  replace_na(list(n_transit_HBW = 0,
+                  n_SOV_HBW = 0,
+                  n_HOV_HBW = 0,
+                  n_walk_HBW = 0,
+                  n_bike_HBW =0)) 
+
+
+# NHB
+skims <- skims %>%
+  mutate(utility_transit_NHB = transit_const_NHB +
+                               ride_time * -0.008  +
+                               (access_time + 
+                                 egress_time +
+                                 wait_time +
+                                 transfer_time) * -0.025 +
+                               transit_cost * -0.01,
+         utility_SOV_NHB = SOV_const_NHB +
+                           car_time * -0.008 +
+                           drive_cost * -0.01,
+         utility_HOV_NHB = HOV_const_NHB +
+                           car_time * -0.008 +
+                           carpool_cost * -0.01,
+         utility_walk_NHB = walk_const_NHB +
+                            walk_time * -0.025,
+         utility_bike_NHB = bike_const_NHB +
+                            bike_time * -0.025) %>%
+  mutate(exp_u_walk_NHB = exp(utility_walk_NHB),
+         exp_u_bike_NHB = exp(utility_bike_NHB),
+         exp_u_SOV_NHB = exp(utility_SOV_NHB),
+         exp_u_HOV_NHB = exp(utility_HOV_NHB),
+         exp_u_transit_NHB = exp(utility_transit_NHB)) %>%
+  rowwise() %>%
+  mutate(utility_active_NHB = log(sum(exp_u_walk_NHB, 
+                                          exp_u_bike_NHB, 
+                                          na.rm = TRUE)),
+         utility_car_NHB = log(sum(exp_u_SOV_NHB,
+                                       exp_u_HOV_NHB,
+                                       na.rm = TRUE))) %>%
+  mutate(exp_u_active_NHB = exp(utility_active_NHB),
+         exp_u_car_NHB = exp(utility_car_NHB)) %>%
+  mutate(total_utility_NHB = sum(exp_u_active_NHB, 
+                                 exp_u_car_NHB,
+                                 exp_u_transit_NHB,
+                                 na.rm = TRUE)) %>%
+  ungroup()  %>%
+  mutate(p_transit_NHB = exp(utility_transit_NHB) / total_utility_NHB,
+         p_car_NHB = exp(utility_car_NHB) / total_utility_NHB,
+         p_active_NHB = exp(utility_active_NHB) / total_utility_NHB)  %>%
+  mutate(p_SOV_if_car_NHB = exp(utility_SOV_NHB) / exp(utility_car_NHB),
+         p_HOV_if_car_NHB = exp(utility_HOV_NHB) / exp(utility_car_NHB),
+         p_walk_if_active_NHB = exp(utility_walk_NHB) / exp(utility_active_NHB),
+         p_bike_if_active_NHB = exp(utility_bike_NHB) / exp(utility_active_NHB)) %>%
+  mutate(p_SOV_NHB = p_SOV_if_car_NHB * p_car_NHB,
+         p_HOV_NHB = p_HOV_if_car_NHB * p_car_NHB,
+         p_walk_NHB = p_walk_if_active_NHB * p_active_NHB,
+         p_bike_NHB = p_bike_if_active_NHB * p_active_NHB) %>%
+  mutate(n_transit_NHB = round(NHB_flow * p_transit_NHB),
+         n_SOV_NHB = round(NHB_flow * p_SOV_NHB),
+         n_HOV_NHB = round(NHB_flow * p_HOV_NHB),
+         n_walk_NHB = round(NHB_flow * p_walk_NHB),
+         n_bike_NHB = round(NHB_flow * p_bike_NHB)) %>%
+  replace_na(list(n_transit_NHB = 0,
+                  n_SOV_NHB = 0,
+                  n_HOV_NHB = 0,
+                  n_walk_NHB = 0,
+                  n_bike_NHB =0)) 
+
+
+
+```
+
+
+
+# comparison
+```{r}
+
+# HBO
+HBO_modeled_mode_by_purpose_2 <- tibble(
+  purpose = "HBO_model 2", 
+  pct_bike = sum(skims$n_bike_HBO) / 
+                 sum(skims$HBO_flow),
+  pct_SOV = sum(skims$n_SOV_HBO) / 
+                sum(skims$HBO_flow),
+  pct_HOV = sum(skims$n_HOV_HBO) / 
+                sum(skims$HBO_flow),
+  pct_transit = sum(skims$n_transit_HBO) / 
+                sum(skims$HBO_flow),
+  pct_walk = sum(skims$n_walk_HBO) / 
+                sum(skims$HBO_flow))
+
+model_compare2 <- rbind(model_compare, HBO_modeled_mode_by_purpose_2) 
+
+model_compare2
+
+# HBW
+HBW_modeled_mode_by_purpose_2 <- tibble(
+  purpose = "HBW_model 2", 
+  pct_bike = sum(skims$n_bike_HBW) / 
+                 sum(skims$HBW_flow),
+  pct_SOV = sum(skims$n_SOV_HBW) / 
+                sum(skims$HBW_flow),
+  pct_HOV = sum(skims$n_HOV_HBW) / 
+                sum(skims$HBW_flow),
+  pct_transit = sum(skims$n_transit_HBW) / 
+                sum(skims$HBW_flow),
+  pct_walk = sum(skims$n_walk_HBW) / 
+                sum(skims$HBW_flow))
+
+model_compare2 <- rbind(model_compare, HBW_modeled_mode_by_purpose_2) 
+
+model_compare2
+
+# NHB
+NHB_modeled_mode_by_purpose_2 <- tibble(
+  purpose = "NHB_model 2", 
+  pct_bike = sum(skims$n_bike_NHB) / 
+                 sum(skims$NHB_flow),
+  pct_SOV = sum(skims$n_SOV_NHB) / 
+                sum(skims$NHB_flow),
+  pct_HOV = sum(skims$n_HOV_NHB) / 
+                sum(skims$NHB_flow),
+  pct_transit = sum(skims$n_transit_NHB) / 
+                sum(skims$NHB_flow),
+  pct_walk = sum(skims$n_walk_NHB) / 
+                sum(skims$NHB_flow))
+
+model_compare2 <- rbind(model_compare, 
+                        HBO_modeled_mode_by_purpose_2,
+                        HBW_modeled_mode_by_purpose_2,
+                        NHB_modeled_mode_by_purpose_2) 
+
+model_compare2
+
+
+
+
+
+```
+
+
+
+
+
+

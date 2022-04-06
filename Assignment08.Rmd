@@ -1133,6 +1133,19 @@ ggsave("graphics/A8_diff_NHB.png", diff_NHB, device = "png")
 
 ```
 
+# save skims
+```{r}
+write_csv(skims, here("existing",
+              "data",
+              "skims2.csv"))
+
+write_csv(skims_alt, here("alternative",
+              "data",
+              "skims_alt2.csv"))
+
+
+```
+
 
 
 
