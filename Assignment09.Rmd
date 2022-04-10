@@ -1605,7 +1605,7 @@ NHB_color <- "#b2df8a"
 
 ggplot(pct_change_modes_t) +
   geom_segment(aes(y = 0, yend = 0,
-                   x = 0, xend = 5.2), color = "grey69") +
+                   x = .8, xend = 5.2), color = "grey69") +
   geom_segment(aes(x = pos+.2, xend = pos+.2,
                    y = 0, yend = HBO), color = HBO_color, 
                size = 1.5) +
