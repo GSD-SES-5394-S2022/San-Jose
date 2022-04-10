@@ -1518,11 +1518,88 @@ overall_compare
 ```{r}
 attach(overall_compare)
 
-pct_change_bike <- rbind((pct_bike[3] - pct_bike[1]) / pct_bike[1],
-                         (pct_bike[4] - pct_bike[2]) / pct_bike[4]))
+pct_change_bike <- rbind("pct_change_bike",
+                         (pct_bike[4] - pct_bike[1]) / pct_bike[1],
+                         (pct_bike[5] - pct_bike[2]) / pct_bike[2],
+                         (pct_bike[6] - pct_bike[3]) / pct_bike[3])
 
+pct_change_SOV <- rbind("pct_change_SOV",
+                         (pct_SOV[4] - pct_SOV[1]) / pct_SOV[1],
+                         (pct_SOV[5] - pct_SOV[2]) / pct_SOV[2],
+                         (pct_SOV[6] - pct_SOV[3]) / pct_SOV[3])
+
+pct_change_HOV <- rbind("pct_change_HOV",
+                         (pct_HOV[4] - pct_HOV[1]) / pct_HOV[1],
+                         (pct_HOV[5] - pct_HOV[2]) / pct_HOV[2],
+                         (pct_HOV[6] - pct_HOV[3]) / pct_HOV[3])
+
+pct_change_transit <- rbind("pct_change_transit",
+                         (pct_transit[4] - pct_transit[1]) / pct_transit[1],
+                         (pct_transit[5] - pct_transit[2]) / pct_transit[2],
+                         (pct_transit[6] - pct_transit[3]) / pct_transit[3])
+
+
+pct_change_walk <- rbind("pct_change_walk",
+                         (pct_walk[4] - pct_walk[1]) / pct_walk[1],
+                         (pct_walk[5] - pct_walk[2]) / pct_walk[2],
+                         (pct_walk[6] - pct_walk[3]) / pct_walk[3]) 
+
+detach(overall_compare)
+
+pct_change_modes <- as.data.frame(
+  cbind(rbind("TripType","HBO", "HBW", "NHB"),
+        pct_change_bike,
+        pct_change_SOV,
+        pct_change_HOV,
+        pct_change_transit,
+        pct_change_walk)
+)
+
+colnames(pct_change_modes) <- pct_change_modes[1,] 
+pct_change_modes <-  pct_change_modes[-1,] %>%
+  mutate(pct_change_bike = round(as.numeric(pct_change_bike)*100, 1),
+         pct_change_SOV = round(as.numeric(pct_change_SOV) * 100, 1),
+         pct_change_HOV = round(as.numeric(pct_change_HOV) * 100, 1),
+         pct_change_transit = round(as.numeric(pct_change_transit) * 100, 1),
+         pct_change_walk = round(as.numeric(pct_change_walk) * 100, 1))
 
 
 ```
+
+# visualize
+
+```{r}
+
+overall_compare_wide <- overall_compare %>%
+  mutate(TripType = case_when(purpose %in% c("HBO_model 2", "HBO_model 2 alt") ~ "HBO",
+                              purpose %in% c("HBW_model 2", "HBW_model 2 alt") ~ "HBW",
+                              purpose %in% c("NHB_model 2", "NHB_model 2 alt") ~ "NHB"),
+         condition = case_when(purpose %in% c("HBO_model 2 alt",
+                                              "HBW_model 2 alt", 
+                                              "NHB_model 2 alt") ~ "alternative",
+                               purpose %in% c("HBO_model 2",
+                                              "HBW_model 2", 
+                                              "NHB_model 2") ~ "existing")) %>%
+  pivot_wider(id_cols = "TripType",
+              names_from = "condition",
+              values_from = c("pct_bike", "pct_transit",
+                              "pct_SOV", "pct_HOV", "pct_walk"))
+
+ggplot(overall_compare_wide) +
+  geom_segment(aes(x = ))
+  
+
+
+```
+
+
+
+
+
+
+
+
+
+
 
 
