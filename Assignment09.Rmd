@@ -795,6 +795,9 @@ model_compare2 <- rbind(model_compare,
 
 model_compare2
 
+existing_model <- model_compare2 %>%
+  filter(purpose %in% c("HBO_model 2", "HBW_model 2", "NHB_model 2"))
+
 
 
 
@@ -1501,8 +1504,22 @@ model_compare_alt
 
 
 #overall comparison
-overall_compare <- rbind(model_compare2,
-                         model_compare_alt)
+
+alternative_model <- model_compare_alt[c(9:11),]
+
+overall_compare <- rbind(existing_model, alternative_model)
+
+overall_compare
+
+```
+
+# Calculate changes from existing to alternative
+
+```{r}
+attach(overall_compare)
+
+pct_change_bike <- rbind((pct_bike[3] - pct_bike[1]) / pct_bike[1],
+                         (pct_bike[4] - pct_bike[2]) / pct_bike[4]))
 
 
 
