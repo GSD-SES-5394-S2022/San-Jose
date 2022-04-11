@@ -40,7 +40,7 @@ skims <- here("existing",
          n_SOV_NHB,
          n_HOV_NHB,
          n_walk_NHB,
-         n_bike_NHB) %>%
+         n_bike_NHB,
          routes) %>%
   mutate(fromId = as.character(fromId),
          toId = as.character(toId))
@@ -197,7 +197,7 @@ stop_r5()
 # Calculate PMT by mode
 
 ```{r, message=F}
-PMT_car <- skims %>%
+PMT_car_HBO <- skims %>%
   left_join(drive_dist, by = c("fromId", "toId")) %>%
   select(n_SOV_HBO, n_HOV_HBO, miles) %>%
   mutate(PMT_SOV_HBO = n_SOV_HBO * miles,
@@ -205,20 +205,83 @@ PMT_car <- skims %>%
   summarize(total_SOV_miles = sum(PMT_SOV_HBO),
             total_HOV_miles = sum(PMT_HOV_HBO))
 
-PMT_bike<- skims %>%
-  left_join(drive_dist, by = c("fromId", "toId")) %>%
+PMT_bike_HBO<- skims %>%
+  left_join(bike_dist, by = c("fromId", "toId")) %>%
   select(n_bike_HBO, miles) %>%
-  mutate(PMT_walk_HBO = n_bike_HBO * miles) %>%
-  summarize(total_walk_miles = sum(PMT_SOV_HBO))
+  mutate(PMT_BIKE_HBO = n_bike_HBO * miles) %>%
+  summarize(total_bike_miles = sum(PMT_SOV_HBO))
 
-PMT_walk<- skims %>%
-  left_join(drive_dist, by = c("fromId", "toId")) %>%
+PMT_walk_HBO<- skims %>%
+  left_join(ped_dist, by = c("fromId", "toId")) %>%
   select(n_walk_HBO, miles) %>%
-  mutate(PMT_walk_HBO = n_walk_HBO * miles) %>%
-  summarize(total_SOV_miles = sum(PMT_SOV_HBO),
-            total_HOV_miles = sum(PMT_HOV_HBO))
+  mutate(PMT_WALK_HBO = n_walk_HBO * miles) %>%
+  summarize(total_WALK_miles = sum(PMT_SOV_HBO))
 
-PMT_car
-PMT_bike
+PMT_car_HBW <- skims %>%
+  left_join(drive_dist, by = c("fromId", "toId")) %>%
+  select(n_SOV_HBW, n_HOV_HBW, miles) %>%
+  mutate(PMT_SOV_HBW = n_SOV_HBW * miles,
+         PMT_HOV_HBW = n_HOV_HBW * miles) %>%
+  summarize(total_SOV_miles = sum(PMT_SOV_HBW),
+            total_HOV_miles = sum(PMT_HOV_HBW))
+
+PMT_bike_HBW<- skims %>%
+  left_join(bike_dist, by = c("fromId", "toId")) %>%
+  select(n_bike_HBW, miles) %>%
+  mutate(PMT_BIKE_HBW = n_bike_HBW * miles) %>%
+  summarize(total_bike_miles = sum(PMT_SOV_HBW))
+
+PMT_walk_HBW<- skims %>%
+  left_join(ped_dist, by = c("fromId", "toId")) %>%
+  select(n_walk_HBW, miles) %>%
+  mutate(PMT_WALK_HBW = n_walk_HBW * miles) %>%
+  summarize(total_WALK_miles = sum(PMT_SOV_HBW))
+
+PMT_car__NHB <- skims %>%
+  left_join(drive_dist, by = c("fromId", "toId")) %>%
+  select(n_SOV_NHB, n_HOV_NHB, miles) %>%
+  mutate(PMT_SOV_NHB = n_SOV_NHB * miles,
+         PMT_HOV_NHB = n_HOV_NHB * miles) %>%
+  summarize(total_SOV_miles = sum(PMT_SOV_NHB),
+            total_HOV_miles = sum(PMT_HOV_NHB))
+
+PMT_bike_NHB<- skims %>%
+  left_join(bike_dist, by = c("fromId", "toId")) %>%
+  select(n_bike_NHB, miles) %>%
+  mutate(PMT_BIKE_NHB = n_bike_NHB * miles) %>%
+  summarize(total_bike_miles = sum(PMT_SOV_NHB))
+
+PMT_walk_NHB<- skims %>%
+  left_join(ped_dist, by = c("fromId", "toId")) %>%
+  select(n_walk_NHB, miles) %>%
+  mutate(PMT_WALK_NHB = n_walk_NHB * miles) %>%
+  summarize(total_WALK_miles = sum(PMT_SOV_NHB))
+
+
+PMT_car_HBO
+PMT_bike_HBO
+PMT_walk_HBO
+PMT_car_HBW
+PMT_bike_HBW
+PMT_walk_HBW
+PMT_car_NHB
+PMT_bike_NHB
+PMT_walk_NHB
+
+PMT_car <- rbind(PMT_car_HBO,PMT_car_HBW,PMT_car_NHB)%>% #summarize by sov hov
+  
+PMT_bike <-rbind(PMT_bike_HBO,PMT_bike_HBW,PMT_bike_NHB)
+PMT_walk <-rbind(PMT_walk_HBO,PMT_walk_HBW,PMT_walk_NHB)
+
+
 
 ```
+
+#Calculate VMT
+```{r}
+VMT <- PMT_car$total_SOV_miles[1] + 
+       PMT_car$total_HOV_miles[1] / 2.71
+
+VMT
+```
+
