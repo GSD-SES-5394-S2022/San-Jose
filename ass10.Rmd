@@ -1,0 +1,224 @@
+---
+title: "Assignment_10"
+author: "Megan Willis-Jackson, Claire Wang, Ignacio Lafuente"
+date: "4/5/2022"
+output: html_document
+---
+
+# Load Libraries
+
+```{r, message=F}
+options(java.parameters = "-Xmx2G")
+
+library(here)
+library(tidyverse)
+library(stplanr)
+library(r5r)
+library(sf)
+```
+
+# Load data
+
+```{r, message=F}
+skims <- here("existing",
+                     "data",
+                     "skims.csv") %>%
+  read_csv(show_col_types = FALSE) %>%
+  select(fromId, 
+         toId, 
+         n_transit_HBO,
+         n_SOV_HBO,
+         n_HOV_HBO,
+         n_walk_HBO,
+         n_bike_HBO,
+         n_transit_HBW,
+         n_SOV_HBW,
+         n_HOV_HBW,
+         n_walk_HBW,
+         n_bike_HBW,
+         n_transit_NHB,
+         n_SOV_NHB,
+         n_HOV_NHB,
+         n_walk_NHB,
+         n_bike_NHB) %>%
+         routes) %>%
+  mutate(fromId = as.character(fromId),
+         toId = as.character(toId))
+```
+
+# Convert PA matrix to OD matrix
+
+```{r, message=F}
+HBO_PA_mat <- skims %>%
+  od_to_odmatrix(attrib = "n_transit_HBO", 
+                 name_orig = "fromId",
+                 name_dest = "toId") 
+
+HBO_PA_mat <- HBO_PA_mat[,row.names(HBO_PA_mat)]
+
+HBO_PA_mat_trans <- t(HBO_PA_mat)
+
+HBO_OD_mat <- (HBO_PA_mat + HBO_PA_mat_trans) / 2
+
+HBO_OD_table <- HBO_OD_mat %>%
+  odmatrix_to_od() %>%
+  rename(fromId = orig,
+         toId = dest) %>%
+  left_join(skims) %>%
+  select(-n_transit_HBO)
+
+HBO_PA_mat <- skims %>%
+  od_to_odmatrix(attrib = "n_transit_HBO", 
+                 name_orig = "fromId",
+                 name_dest = "toId") 
+#HBW
+HBW_PA_mat <- HBW_PA_mat[,row.names(HBW_PA_mat)]
+
+HBW_PA_mat_trans <- t(HBW_PA_mat)
+
+HBW_OD_mat <- (HBW_PA_mat + HBW_PA_mat_trans) / 2
+
+HBW_OD_table <- HBW_OD_mat %>%
+  odmatrix_to_od() %>%
+  rename(fromId = orig,
+         toId = dest) %>%
+  left_join(skims) %>%
+  select(-n_transit_HBW)
+
+#NHB
+NHB_PA_mat <- NHB_PA_mat[,row.names(NHB_PA_mat)]
+
+NHB_PA_mat_trans <- t(NHB_PA_mat)
+
+NHB_OD_mat <- (NHB_PA_mat + NHB_PA_mat_trans) / 2
+
+NHB_OD_table <- NHB_OD_mat %>%
+  odmatrix_to_od() %>%
+  rename(fromId = orig,
+         toId = dest) %>%
+  left_join(skims) %>%
+  select(-n_transit_NHB)
+```
+
+# Count trips using each route
+
+```{r, message=F}
+route_trips_HBO <- HBO_OD_table %>%
+  filter(flow > 0 & !is.na(routes)) %>%
+  mutate(route_1 = str_split_fixed(routes, "\\|", 3)[,1],
+         route_2 = str_split_fixed(routes, "\\|", 3)[,2],
+         route_3 = str_split_fixed(routes, "\\|", 3)[,3]) %>%
+  pivot_longer(cols = c(route_1, route_2, route_3),
+               values_to = "route") %>%
+  filter(route != "") %>%
+  select(route, flow) %>%
+  group_by(route) %>%
+  summarize(ridership = round(sum(flow)))
+
+route_trips_HBW <- HBW_OD_table %>%
+  filter(flow > 0 & !is.na(routes)) %>%
+  mutate(route_1 = str_split_fixed(routes, "\\|", 3)[,1],
+         route_2 = str_split_fixed(routes, "\\|", 3)[,2],
+         route_3 = str_split_fixed(routes, "\\|", 3)[,3]) %>%
+  pivot_longer(cols = c(route_1, route_2, route_3),
+               values_to = "route") %>%
+  filter(route != "") %>%
+  select(route, flow) %>%
+  group_by(route) %>%
+  summarize(ridership = round(sum(flow)))
+
+route_trips_NHB <- NHB_OD_table %>%
+  filter(flow > 0 & !is.na(routes)) %>%
+  mutate(route_1 = str_split_fixed(routes, "\\|", 3)[,1],
+         route_2 = str_split_fixed(routes, "\\|", 3)[,2],
+         route_3 = str_split_fixed(routes, "\\|", 3)[,3]) %>%
+  pivot_longer(cols = c(route_1, route_2, route_3),
+               values_to = "route") %>%
+  filter(route != "") %>%
+  select(route, flow) %>%
+  group_by(route) %>%
+  summarize(ridership = round(sum(flow)))
+
+route_trip<- #join all table and sum 
+```
+
+# Calculate trip distances
+
+```{r, message=F}
+centroids <- here("zones",
+                   "centroids.geojson") %>%
+  st_read() %>%
+  rename(id = GEOID) %>%
+  filter(!st_is_empty(.)) 
+
+origins <- centroids %>% 
+  slice(rep(1:n(), each = n())) %>% 
+  mutate(dest_order = 
+           rep(seq(1:length(centroids$id)),
+               length(centroids$id)))
+
+destinations <- origins %>%
+  arrange(dest_order)
+
+r5r_core_existing <- here("existing",
+                          "networks") %>%
+  setup_r5(verbose = FALSE)
+
+ped_dist <- detailed_itineraries(r5r_core_existing,
+                                 origins = origins,
+                                 destinations = destinations,
+                                 mode = "WALK",
+                                 verbose = FALSE)  %>%
+  mutate(miles = distance / 1609.34) %>%
+  select(fromId, toId, miles) %>%
+  st_drop_geometry()
+
+drive_dist <- detailed_itineraries(r5r_core_existing,
+                                 origins = origins,
+                                 destinations = destinations,
+                                 mode = "CAR",
+                                 verbose = FALSE) %>%
+  mutate(miles = distance / 1609.34) %>%
+  select(fromId, toId, miles) %>%
+  st_drop_geometry()
+
+bike_dist <- detailed_itineraries(r5r_core_existing,
+                                 origins = origins,
+                                 destinations = destinations,
+                                 mode = "BICYCLE",
+                                 verbose = FALSE) %>%
+  mutate(miles = distance / 1609.34) %>%
+  select(fromId, toId, miles) %>%
+  st_drop_geometry()
+
+stop_r5() 
+```
+
+# Calculate PMT by mode
+
+```{r, message=F}
+PMT_car <- skims %>%
+  left_join(drive_dist, by = c("fromId", "toId")) %>%
+  select(n_SOV_HBO, n_HOV_HBO, miles) %>%
+  mutate(PMT_SOV_HBO = n_SOV_HBO * miles,
+         PMT_HOV_HBO = n_HOV_HBO * miles) %>%
+  summarize(total_SOV_miles = sum(PMT_SOV_HBO),
+            total_HOV_miles = sum(PMT_HOV_HBO))
+
+PMT_bike<- skims %>%
+  left_join(drive_dist, by = c("fromId", "toId")) %>%
+  select(n_bike_HBO, miles) %>%
+  mutate(PMT_walk_HBO = n_bike_HBO * miles) %>%
+  summarize(total_walk_miles = sum(PMT_SOV_HBO))
+
+PMT_walk<- skims %>%
+  left_join(drive_dist, by = c("fromId", "toId")) %>%
+  select(n_walk_HBO, miles) %>%
+  mutate(PMT_walk_HBO = n_walk_HBO * miles) %>%
+  summarize(total_SOV_miles = sum(PMT_SOV_HBO),
+            total_HOV_miles = sum(PMT_HOV_HBO))
+
+PMT_car
+PMT_bike
+
+```
