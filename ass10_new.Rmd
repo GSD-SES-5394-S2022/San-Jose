@@ -309,6 +309,22 @@ PMT_bike <-rbind(PMT_bike_HBO,PMT_bike_HBW,PMT_bike_NHB)
 PMT_walk <-rbind(PMT_walk_HBO,PMT_walk_HBW,PMT_walk_NHB)
 
 
+write_csv(skims, here("existing",
+              "data",
+              "skims_10.csv"))
+
+write_csv(PMT_car, here("existing",
+              "data",
+              "PMT_car.csv"))
+
+write_csv(PMT_bike, here("existing",
+              "data",
+              "PMT_bike.csv"))
+
+write_csv(PMT_walk, here("existing",
+              "data",
+              "PMT_walk.csv"))
+
 
 ```
 
