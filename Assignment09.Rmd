@@ -949,7 +949,7 @@ bike_const_NHB <- log(bike_share_NHB / (1 - bike_share_NHB))
 # we can incorporate SOV vs HOV differences, and is
 # for a city of >1M people, as San Jose is.
 
-skims_alt_alt <- skims_alt_alt %>%
+skims_alt <- skims_alt %>%
   mutate(utility_transit_HBW = transit_const_HBW +
                                ride_time * -0.033  +
                                (access_time + 
@@ -1073,7 +1073,7 @@ skims_alt <- skims_alt %>%
 ## Probability of each mode
 
 ```{r}
-skims_alt_alt <- skims_alt %>%
+skims_alt <- skims_alt %>%
   mutate(p_transit_HBO = exp(utility_transit_HBO) / total_utility_HBO,
          p_car_HBO = exp(utility_car_HBO) / total_utility_HBO,
          p_active_HBO = exp(utility_active_HBO) / total_utility_HBO,
