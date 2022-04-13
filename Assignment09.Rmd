@@ -1566,6 +1566,41 @@ pct_change_modes <-  pct_change_modes[-1,] %>%
 
 ```
 
+# Overall changes in mode share, regardless of purpose
+
+```{r}
+mode_share_existing<- tibble(
+  pct_bike = (sum(skims$n_bike_HBO) + sum(skims$n_bike_HBW) + sum(skims$n_bike_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+  pct_SOV = (sum(skims$n_SOV_HBO) + sum(skims$n_SOV_HBW) + sum(skims$n_SOV_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+    pct_HOV = (sum(skims$n_HOV_HBO) + sum(skims$n_HOV_HBW) + sum(skims$n_HOV_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+      pct_transit = (sum(skims$n_transit_HBO) + sum(skims$n_transit_HBW) + sum(skims$n_transit_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+      pct_walk = (sum(skims$n_walk_HBO) + sum(skims$n_walk_HBW) + sum(skims$n_walk_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)))
+
+mode_share_alternative<- tibble(
+  pct_bike = (sum(skims_alt$n_bike_HBO) + sum(skims_alt$n_bike_HBW) + sum(skims_alt$n_bike_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+  pct_SOV = (sum(skims_alt$n_SOV_HBO) + sum(skims_alt$n_SOV_HBW) + sum(skims_alt$n_SOV_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+    pct_HOV = (sum(skims_alt$n_HOV_HBO) + sum(skims_alt$n_HOV_HBW) + sum(skims_alt$n_HOV_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+      pct_transit = (sum(skims_alt$n_transit_HBO) + sum(skims_alt$n_transit_HBW) + sum(skims_alt$n_transit_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+      pct_walk = (sum(skims_alt$n_walk_HBO) + sum(skims_alt$n_walk_HBW) + sum(skims_alt$n_walk_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)))
+
+mode_share_changes <- rbind(mode_share_existing, mode_share_alternative) 
+
+mode_share_changes
+
+
+```
+
+
 # visualize
 
 ```{r}
