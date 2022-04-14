@@ -173,9 +173,16 @@ write_csv(route_trips_HBO, here("existing",
               "data",
               "route_trips_HBO.csv"))
 
-
-
 ```
+
+# Graphs on ridership
+
+```{r}
+# Stacked (by purpose) barplot for transit lines, force ~N? Actually, histogram with brackets for ridership, and having the count of lines within each bracket as the frequency
+
+# Table showing the 'podium' for each purpose and overall
+```
+
 
 # Calculate trip distances
 
@@ -185,7 +192,7 @@ centroids <- here("zones",
   st_read()  %>%
   filter(!st_is_empty(.)) 
 
-origins <- st_as_sf(centroids) %>% # added st_as_sf
+origins <- st_as_sf(centroids) %>%
   slice(rep(1:n(), each = n())) %>% 
   mutate(dest_order = 
            rep(seq(1:length(centroids$id)),
@@ -207,6 +214,10 @@ ped_dist <- detailed_itineraries(r5r_core_existing,
   select(fromId, toId, miles) %>%
   st_drop_geometry()
 
+saveRDS(ped_dist, here("existing",
+                       "data",
+                       "ped_dist.Rds"))
+
 drive_dist <- detailed_itineraries(r5r_core_existing,
                                  origins = origins,
                                  destinations = destinations,
@@ -216,6 +227,10 @@ drive_dist <- detailed_itineraries(r5r_core_existing,
   select(fromId, toId, miles) %>%
   st_drop_geometry()
 
+saveRDS(drive_dist, here("existing",
+                       "data",
+                       "drive_dist.Rds"))
+
 bike_dist <- detailed_itineraries(r5r_core_existing,
                                  origins = origins,
                                  destinations = destinations,
@@ -224,6 +239,10 @@ bike_dist <- detailed_itineraries(r5r_core_existing,
   mutate(miles = distance / 1609.34) %>%
   select(fromId, toId, miles) %>%
   st_drop_geometry()
+
+saveRDS(bike_dist, here("existing",
+                       "data",
+                       "bike_dist.Rds"))
 
 stop_r5() 
 ```
