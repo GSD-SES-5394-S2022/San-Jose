@@ -15,6 +15,7 @@ library(knitr)
 library(kableExtra)
 library(survey)
 library(srvyr)
+library(gridExtra)
 ```
 
 # Calculating Cost Variables
@@ -949,7 +950,7 @@ bike_const_NHB <- log(bike_share_NHB / (1 - bike_share_NHB))
 # we can incorporate SOV vs HOV differences, and is
 # for a city of >1M people, as San Jose is.
 
-skims_alt_alt <- skims_alt_alt %>%
+skims_alt <- skims_alt %>%
   mutate(utility_transit_HBW = transit_const_HBW +
                                ride_time * -0.033  +
                                (access_time + 
@@ -1073,7 +1074,7 @@ skims_alt <- skims_alt %>%
 ## Probability of each mode
 
 ```{r}
-skims_alt_alt <- skims_alt %>%
+skims_alt <- skims_alt %>%
   mutate(p_transit_HBO = exp(utility_transit_HBO) / total_utility_HBO,
          p_car_HBO = exp(utility_car_HBO) / total_utility_HBO,
          p_active_HBO = exp(utility_active_HBO) / total_utility_HBO,
@@ -1511,6 +1512,21 @@ overall_compare <- rbind(existing_model, alternative_model)
 
 overall_compare
 
+overall_compare_formatted <- overall_compare %>%
+  rename(`Trip Type` = purpose) %>%
+  mutate(`Percent Bike` = round(pct_bike * 100, 1),
+         `Percent SOV` = round(pct_SOV * 100, 1),
+         `Percent HOV` = round(pct_HOV * 100, 1),
+         `Percent Transit` = round(pct_transit * 100, 1),
+         `Percent Walk` = round(pct_walk * 100, 1)) %>% 
+  .[,-c(2:6)] %>%
+  tibble()
+
+pdf("graphics/modesharetable.pdf", width = 8, height = 4)
+grid.table(overall_compare_formatted) 
+dev.off()
+
+
 ```
 
 # Calculate changes from existing to alternative
@@ -1566,6 +1582,43 @@ pct_change_modes <-  pct_change_modes[-1,] %>%
 
 ```
 
+# Overall changes in mode share, regardless of purpose
+
+```{r}
+mode_share_overall <- data.frame(
+  mode = rep(c('bike', 'SOV', 'HOV', 'transit', 'walk'), times = 2),
+  condition = rep(c('existing', 'alternative'), each = 5),
+  value = c(
+    (sum(skims$n_bike_HBO) + sum(skims$n_bike_HBW) + sum(skims$n_bike_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+  (sum(skims$n_SOV_HBO) + sum(skims$n_SOV_HBW) + sum(skims$n_SOV_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+  (sum(skims$n_HOV_HBO) + sum(skims$n_HOV_HBW) + sum(skims$n_HOV_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+  (sum(skims$n_transit_HBO) + sum(skims$n_transit_HBW) + sum(skims$n_transit_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+  (sum(skims$n_walk_HBO) + sum(skims$n_walk_HBW) + sum(skims$n_walk_NHB)) / 
+                 (sum(skims$HBO_flow) + sum(skims$HBW_flow) + sum(skims$NHB_flow)),
+  (sum(skims_alt$n_bike_HBO) + sum(skims_alt$n_bike_HBW) + sum(skims_alt$n_bike_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+  (sum(skims_alt$n_SOV_HBO) + sum(skims_alt$n_SOV_HBW) + sum(skims_alt$n_SOV_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+  (sum(skims_alt$n_HOV_HBO) + sum(skims_alt$n_HOV_HBW) + sum(skims_alt$n_HOV_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+  (sum(skims_alt$n_transit_HBO) + sum(skims_alt$n_transit_HBW) + sum(skims_alt$n_transit_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)),
+  (sum(skims_alt$n_walk_HBO) + sum(skims_alt$n_walk_HBW) + sum(skims_alt$n_walk_NHB)) / 
+                 (sum(skims_alt$HBO_flow) + sum(skims_alt$HBW_flow) + sum(skims_alt$NHB_flow)))
+  )
+
+ggplot(mode_share_overall, aes(fill=mode, x=value, y = condition)) +
+    geom_bar(position="stack", stat="identity") +
+  theme_classic()
+
+ggsave("graphics/mode_share_overall.png")
+```
+
+
 # visualize
 
 ```{r}
@@ -1580,14 +1633,33 @@ overall_compare_wide <- overall_compare %>%
                                purpose %in% c("HBO_model 2",
                                               "HBW_model 2", 
                                               "NHB_model 2") ~ "existing")) %>%
-  pivot_wider(id_cols = "TripType",
-              names_from = "condition",
-              values_from = c("pct_bike", "pct_transit",
-                              "pct_SOV", "pct_HOV", "pct_walk"))
+  t() %>%
+  as.data.frame()
+
+colnames(overall_compare_wide) <- paste0(overall_compare_wide[7,],"_",
+                                         overall_compare_wide[8,])  
+
+overall_compare_wide <- overall_compare_wide[-c(1,7:8),] %>%
+    mutate_at(c(1:6), as.numeric) %>%
+  mutate(mode = rownames(.)) %>%
+  arrange(HBO_existing) %>%
+  pivot_longer(cols = HBO_existing:NHB_alternative, names_to = "TripType")
 
 ggplot(overall_compare_wide) +
-  geom_segment(aes(x = pct_bike_existing, xend = pct_bike_alternative,
-                   y = TripType, yend = TripType))
+  geom_bar(aes(x = TripType,
+               y = value * 100,
+               fill = mode), stat = 'identity') +
+  scale_fill_brewer(name = "Mode",
+                    labels = c("Bike","HOV","SOV","Transit","Walk")) +
+  scale_x_discrete(labels = c("HBO - Alternative", "HBO - Existing",
+                              "HBW - Alternative", "HBW - Existing",
+                              "NHB - Alternative", "NHB - Existing")) +
+  scale_y_continuous(name = "Percent Mode Share") +
+  coord_flip() +
+  theme(panel.background = element_blank(),
+        text = element_text(size = 18))
+
+ggsave("graphics/modeshare_bar.jpeg", height = 7, width = 14)
 
 pct_change_modes_t <- pct_change_modes %>%
   t()
@@ -1602,30 +1674,34 @@ pct_change_modes_t <- pct_change_modes_t[-1,] %>%
 HBO_color <- "#a6cee3"
 HBW_color <- "#1f78b4"
 NHB_color <- "#b2df8a"
+legend_colors <- c("HBO" = HBO_color, "HBW" = HBW_color, "NHB" = NHB_color)
 
 ggplot(pct_change_modes_t) +
   geom_segment(aes(y = 0, yend = 0,
                    x = .8, xend = 5.2), color = "grey69") +
   geom_segment(aes(x = pos+.2, xend = pos+.2,
-                   y = 0, yend = HBO), color = HBO_color, 
-               size = 1.5) +
-  geom_point(aes(x = pos+.2, y = HBO), size = 5, color = HBO_color) +
+                   y = 0, yend = HBO, color = "HBO"), 
+               size = 2.5) +
+  geom_point(aes(x = pos+.2, y = HBO, color = "HBO"), size = 8) +
   geom_segment(aes(x = pos, xend = pos,
-                   y = 0, yend = HBW), color = HBW_color,
-               size = 1.5) +
-  geom_point(aes(x = pos, y = HBW), size = 5, color = HBW_color) +
+                   y = 0, yend = HBW, color = "HBW"),
+               size = 2.5) +
+  geom_point(aes(x = pos, y = HBW, color = "HBW"), size = 8) +
   geom_segment(aes(x = pos-.2, xend = pos-.2,
-                   y = 0, yend = NHB), color = NHB_color,
-               size = 1.5) +
-  geom_point(aes(x = pos-.2, y = NHB), size = 5, color = NHB_color) +
+                   y = 0, yend = NHB, color = "NHB"),
+               size = 2.5) +
+  geom_point(aes(x = pos-.2, y = NHB, color = "NHB"), size = 8) +
   scale_x_continuous(name = "Mode",
                      breaks = seq(1,5, by = 1),
                      labels = c("Bike","SOV","HOV","Transit","Walk")) +
   scale_y_continuous(name = "Percent Change in Modeshare") +
+  scale_color_manual(values = legend_colors,
+                     name = "Trip Type") +
   coord_flip() +
-  theme(panel.background = element_blank())
+  theme(panel.background = element_blank(),
+        text = element_text(size = 30))
   
-ggsave("graphics/modeshare_change.jpeg")
+ggsave("graphics/modeshare_change.jpeg", height = 10, width = 14)
 
 ```
 
