@@ -22,7 +22,7 @@ library(sf)
 ```{r, message=F}
 skims <- here("existing",
                      "data",
-                     "skims2.csv") %>%
+                     "skims.csv") %>%
   read_csv(show_col_types = FALSE) %>%
   select(fromId, 
          toId, 
@@ -186,7 +186,7 @@ centroids <- here("zones",
   rename(id = GEOID) %>%
   filter(!st_is_empty(.)) 
 
-origins <- centroids %>% 
+origins <- st_as_sf(centroids) %>% # added st_as_sf
   slice(rep(1:n(), each = n())) %>% 
   mutate(dest_order = 
            rep(seq(1:length(centroids$id)),

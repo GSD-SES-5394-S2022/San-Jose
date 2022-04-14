@@ -1598,6 +1598,8 @@ mode_share_overall <- data.frame(
 ggplot(mode_share_overall, aes(fill=mode, x=value, y = condition)) +
     geom_bar(position="stack", stat="identity") +
   theme_classic()
+
+ggsave("graphics/mode_share_overall.png")
 ```
 
 
