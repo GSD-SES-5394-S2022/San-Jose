@@ -309,6 +309,9 @@ PMT_car <- rbind(PMT_car_HBO,PMT_car_HBW,PMT_car_NHB) #summarize by sov hov
 PMT_bike <-rbind(PMT_bike_HBO,PMT_bike_HBW,PMT_bike_NHB)
 PMT_walk <-rbind(PMT_walk_HBO,PMT_walk_HBW,PMT_walk_NHB)
 
+PMT_car
+PMT_bike
+PMT_walk
 
 write_csv(skims, here("existing",
               "data",
