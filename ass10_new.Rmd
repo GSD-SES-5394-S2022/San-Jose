@@ -151,15 +151,15 @@ route_trips_NHB <- NHB_OD_table %>%
   mutate(ridership_NHB=ridership)
 
 #join all table and sum 
-route_trip_by_purporse<-left_join(route_trips_HBO,route_trips_HBW,by="route")
-route_trip_by_purporse<-left_join(route_trip_by_purporse,route_trips_NHB,by="route")%>%
+route_trip_by_purpose<-left_join(route_trips_HBO,route_trips_HBW,by="route")
+route_trip_by_purpose<-left_join(route_trip_by_purpose,route_trips_NHB,by="route")%>%
                         select(route,ridership_HBO,ridership_HBW,ridership_NHB)%>%
                         mutate(sum_ridership=ridership_HBO+ridership_HBW+ridership_NHB)
                         
 
-write_csv(route_trip_by_purporse, here("existing",
+write_csv(route_trip_by_purpose, here("existing",
               "data",
-              "transit_route_trip_by_purporse.csv"))
+              "transit_route_trip_by_purpose.csv"))
 
 write_csv(route_trips_NHB, here("existing",
               "data",
@@ -178,18 +178,22 @@ write_csv(route_trips_HBO, here("existing",
 # Graphs on ridership
 
 ```{r}
-# Stacked (by purpose) barplot for transit lines, force ~N? Actually, histogram with brackets for ridership, and having the count of lines within each bracket as the frequency
+# Stacked (by purpose) histogram for transit lines (number of lines for each ridership bracket)
 
-# pivot wider or pivot longer
+hist_y <- pivot_longer(select(
+  route_trip_by_purpose, -sum_ridership),
+  c(ridership_HBO,
+    ridership_HBW,
+    ridership_NHB),
+  names_to = 'purpose') %>%
+  ggplot() +
+  geom_histogram(aes(x=value, fill=purpose), boundary = 0, bins=20) +
+  labs(y = "Count of lines", x = "Trips") +
+  theme_bw()
 
-# ggplot(data=route_trip_by_purpose, aes(x=Sepal.Width,fill = Species)) + geom_histogram()
+hist_y
 
-# hist_y <- ggplot(census) +
-#   geom_histogram(aes(x = census$med_income),
-#                  fill = "dodgerblue3") +
-#   labs(y = "Count", x = "Median Income")
-
-#ggsave
+ggsave("graphics/A10_transit_lines_hist_ex.png")
 ```
 
 # Calculate trip distances
@@ -347,7 +351,9 @@ PMT_bike_NHB
 PMT_walk_NHB
 
 
-PMT_car <- rbind(PMT_car_HBO,PMT_car_HBW,PMT_car_NHB)%>%#summarize by sov hov
+PMT_car <- rbind(PMT_car_HBO,PMT_car_HBW,PMT_car_NHB) %>% 
+  mutate(total_car_miles=total_SOV_miles+total_HOV_miles, purpose = c('HBO', 'HBW', 'NHB')) %>% 
+  select(total_car_miles, purpose)
   
 PMT_bike <-rbind(PMT_bike_HBO,PMT_bike_HBW,PMT_bike_NHB)
 PMT_walk <-rbind(PMT_walk_HBO,PMT_walk_HBW,PMT_walk_NHB)
@@ -358,7 +364,7 @@ PMT_walk
 
 write_csv(skims, here("existing",
               "data",
-              "skims_10.csv"))
+              "skims.csv"))
 
 write_csv(PMT_car, here("existing",
               "data",
@@ -372,13 +378,13 @@ write_csv(PMT_walk, here("existing",
               "data",
               "PMT_walk.csv"))
 
-
 ```
 
 #Calculate VMT
 ```{r}
-VMT <- PMT_car$total_SOV_miles[1] + 
-       PMT_car$total_HOV_miles[1] / 2.72
+VMT <- mutate(PMT_car, multipliers = c(2.71, 2.42, 2.75)) %>% 
+  mutate(total_car_miles = total_car_miles / multipliers)
+  
 
 VMT
 
@@ -389,7 +395,7 @@ VMT
 # Load data
 
 ```{r, message=F}
-skims_alt <- here("existing",
+skims_alt <- here("alternative",
                      "data",
                      "skims_alt.csv") %>%
   read_csv(show_col_types = FALSE) %>%
@@ -520,15 +526,15 @@ route_trips_NHB_alt <- NHB_OD_table_alt %>%
   mutate(ridership_NHB=ridership)
 
 #join all table and sum 
-route_trip_by_purporse_alt<-left_join(route_trips_HBO_alt,route_trips_HBW_alt,by="route") %>%
+route_trip_by_purpose_alt<-left_join(route_trips_HBO_alt,route_trips_HBW_alt,by="route") %>%
   left_join(route_trips_NHB_alt,by="route")%>%
                         select(route,ridership_HBO,ridership_HBW,ridership_NHB)%>%
                         mutate(sum_ridership=ridership_HBO+ridership_HBW+ridership_NHB)
                         
 
-write_csv(route_trip_by_purporse_alt, here("alternative",
+write_csv(route_trip_by_purpose_alt, here("alternative",
               "data",
-              "transit_route_trip_by_purporse_alt.csv"))
+              "transit_route_trip_by_purpose_alt.csv"))
 
 write_csv(route_trips_NHB_alt, here("alternative",
               "data",
@@ -547,26 +553,36 @@ write_csv(route_trips_HBO_alt, here("alternative",
 # Graphs on ridership
 
 ```{r}
-# Stacked (by purpose) barplot for transit lines, force ~N? Actually, histogram with brackets for ridership, and having the count of lines within each bracket as the frequency
+# Stacked (by purpose) histogram for transit lines (number of lines for each ridership bracket)
 
-# hist_y <- ggplot(census) +
-#   geom_histogram(aes(x = census$med_income),
-#                  fill = "dodgerblue3") +
-#   labs(y = "Count", x = "Median Income")
+hist_y_alt <- pivot_longer(select(
+  route_trip_by_purpose_alt, -sum_ridership),
+  c(ridership_HBO,
+    ridership_HBW,
+    ridership_NHB),
+  names_to = 'purpose') %>%
+  ggplot() +
+  geom_histogram(aes(x=value, fill=purpose), boundary = 0, bins=20) +
+  labs(y = "Count of lines", x = "Trips - alt") +
+  theme_bw()
+
+hist_y_alt
+
+ggsave("graphics/A10_transit_lines_hist_alt.png")
 
 # Table showing the 'top line' for each purpose and overall
 
 top_ridership_line <- data.frame(
   mode = c('HBO', 'HBW', 'NHB'),
   existing = c(
-    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$HBO),]],
-    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$HBW),]],
-    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$NHB),]]
+    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$HBO_ridership),]],
+    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$HBW_ridership),]],
+    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$NHB_ridership),]]
               ),
   alternative = c(
-    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose$HBO),]],
-    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$HBW),]],
-    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$NHB),]]
+    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose$HBO_ridership),]],
+    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$HBW_ridership),]],
+    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$NHB_ridership),]]
   ))
 
 top_ridership_line
@@ -650,8 +666,12 @@ PMT_bike_NHB_alt
 PMT_walk_NHB_alt
 
 
-PMT_car_alt <- rbind(PMT_car_HBO_alt,PMT_car_HBW_alt,PMT_car_NHB_alt) %>%
-  #summarize by sov hov
+PMT_car_alt <- rbind(
+  PMT_car_HBO_alt,
+  PMT_car_HBW_alt,
+  PMT_car_NHB_alt) %>% 
+  mutate(total_car_miles=total_SOV_miles+total_HOV_miles, purpose = c('HBO', 'HBW', 'NHB')) %>% 
+  select(total_car_miles, purpose)
   
 PMT_bike_alt <-rbind(PMT_bike_HBO_alt,PMT_bike_HBW_alt,PMT_bike_NHB_alt)
 PMT_walk_alt <-rbind(PMT_walk_HBO_alt,PMT_walk_HBW_alt,PMT_walk_NHB_alt)
@@ -681,9 +701,9 @@ write_csv(PMT_walk_alt, here("alternative",
 
 #Calculate VMT
 ```{r}
-VMT_alt <- PMT_car_alt$total_SOV_miles[1] + 
-       PMT_car_alt$total_HOV_miles[1] / 2.72
-
+VMT_alt <- mutate(PMT_car_alt, multipliers = c(2.71, 2.42, 2.75)) %>% 
+  mutate(total_car_miles = total_car_miles / multipliers)
+  
 VMT_alt
 
 ```
@@ -693,14 +713,33 @@ VMT_alt
 ```{r}
 # barplot with two bars, existing and alternative VMT and PMT
 
-cond_diff <- data.frame(
-  condition = c('Existing', 'Alternative'),
-  VMT = c(VMT, VMT_alt),
-  PMT_walk = c(PMT_walk, PMT_walk_alt),
-  PMT_bike = c(PMT_bike, PMT_bike_alt)) %>% 
-  ggplot(aes(x = condition, y = VMT, fill = condition)) +
+purpose <- c('HBO', 'HBW', 'NHB')
+
+VMT_PMT_existing <- data.frame(
+  VMT = c(VMT$total_car_miles),
+  PMT_walk = c(PMT_walk$total_WALK_miles),
+  PMT_bike = c(PMT_bike$total_bike_miles)) %>% 
+  transpose()
+colnames(VMT_PMT_existing) <- purpose
+
+VMT_PMT_alternative <- data.frame(
+  VMT = c(VMT_alt$total_car_miles),
+  PMT_walk_alt = c(PMT_walk_alt$total_WALK_miles),
+  PMT_bike_alt = c(PMT_bike_alt$total_bike_miles)) %>% 
+  t()
+colnames(VMT_PMT_alternative) <- purpose
+
+VMT_PMT_growth <- VMT_PMT_alternative / VMT_PMT_existing - 1 %>% 
+  mutate(totals = HBO + HBW + NHB)
+
+VMT_PMT_growth_chart <- ggplot(VMT_PMT_growth,
+                               aes(x = 'ID',
+                                   y = value,
+                                   fill = purpose)) +
   geom_bar(stat="identity")
 
-# ggsave
+VMT_PMT_growth_chart
+
+ggsave("graphics/A10_vmt_pmt_diff.png")
 ```
 
