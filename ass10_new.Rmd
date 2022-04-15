@@ -572,19 +572,6 @@ ggsave("graphics/A10_transit_lines_hist_alt.png")
 
 # Table showing the 'top line' for each purpose and overall
 
-# top_ridership_line <- data.frame(
-#   mode = c('HBO', 'HBW', 'NHB'),
-#   existing = c(
-#     route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$ridership_HBO),]],
-#     route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$ridership_HBW),]],
-#     route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$ridership_NHB),]]
-#               ),
-#   alternative = c(
-#     route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose$ridership_HBO),]],
-#     route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$ridership_HBW),]],
-#     route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$ridership_NHB),]]
-#   ))
-
 top_ridership_line <- data.frame(
   purpose = c('HBO', 'HBW', 'NHB', 'Total'),
   existing = c(
