@@ -572,20 +572,36 @@ ggsave("graphics/A10_transit_lines_hist_alt.png")
 
 # Table showing the 'top line' for each purpose and overall
 
+# top_ridership_line <- data.frame(
+#   mode = c('HBO', 'HBW', 'NHB'),
+#   existing = c(
+#     route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$ridership_HBO),]],
+#     route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$ridership_HBW),]],
+#     route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$ridership_NHB),]]
+#               ),
+#   alternative = c(
+#     route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose$ridership_HBO),]],
+#     route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$ridership_HBW),]],
+#     route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$ridership_NHB),]]
+#   ))
+
 top_ridership_line <- data.frame(
-  mode = c('HBO', 'HBW', 'NHB'),
+  purpose = c('HBO', 'HBW', 'NHB', 'Total'),
   existing = c(
-    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$HBO_ridership),]],
-    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$HBW_ridership),]],
-    route_trip_by_purpose[route_trip_by_purpose[which.max(route_trip_by_purpose$NHB_ridership),]]
+    route_trip_by_purpose$route[match(max(route_trip_by_purpose$ridership_HBO), route_trip_by_purpose$ridership_HBO)],
+    route_trip_by_purpose$route[match(max(route_trip_by_purpose$ridership_HBW), route_trip_by_purpose$ridership_HBW)],
+    route_trip_by_purpose$route[match(max(route_trip_by_purpose$ridership_NHB), route_trip_by_purpose$ridership_NHB)],
+    route_trip_by_purpose$route[match(max(route_trip_by_purpose$sum_ridership), route_trip_by_purpose$sum_ridership)]
               ),
   alternative = c(
-    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose$HBO_ridership),]],
-    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$HBW_ridership),]],
-    route_trip_by_purpose_alt[route_trip_by_purpose_alt[which.max(route_trip_by_purpose_alt$NHB_ridership),]]
+    route_trip_by_purpose_alt$route[match(max(route_trip_by_purpose_alt$ridership_HBO), route_trip_by_purpose_alt$ridership_HBO)],
+    route_trip_by_purpose_alt$route[match(max(route_trip_by_purpose_alt$ridership_HBW), route_trip_by_purpose_alt$ridership_HBW)],
+    route_trip_by_purpose$route[match(max(route_trip_by_purpose_alt$ridership_NHB), route_trip_by_purpose_alt$ridership_NHB)],
+    route_trip_by_purpose_alt$route[match(max(route_trip_by_purpose_alt$sum_ridership), route_trip_by_purpose_alt$sum_ridership)]
   ))
 
 top_ridership_line
+
 ```
 
 # Calculate PMT by mode
@@ -713,30 +729,23 @@ VMT_alt
 ```{r}
 # barplot with two bars, existing and alternative VMT and PMT
 
-purpose <- c('HBO', 'HBW', 'NHB')
+VMT_PMT_growth <- data.frame(
+  metric = c('VMT', 'PMT_walk', 'PMT_bike'),
+  HBO = c(VMT_alt$total_car_miles[1] / VMT$total_car_miles[1] - 1,
+          PMT_walk_alt$total_WALK_miles[1] / PMT_walk$total_WALK_miles[1] - 1,
+          PMT_bike_alt$total_bike_miles[1] / PMT_bike$total_bike_miles[1] - 1),
+  HBW = c(VMT_alt$total_car_miles[2] / VMT$total_car_miles[2] - 1,
+          PMT_walk_alt$total_WALK_miles[2] / PMT_walk$total_WALK_miles[2] - 1,
+          PMT_bike_alt$total_bike_miles[2] / PMT_bike$total_bike_miles[2] - 1),
+  NHB = c(VMT_alt$total_car_miles[3] / VMT$total_car_miles[3] - 1,
+          PMT_walk_alt$total_WALK_miles[3] / PMT_walk$total_WALK_miles[3] - 1,
+          PMT_bike_alt$total_bike_miles[3] / PMT_bike$total_bike_miles[3] - 1))
 
-VMT_PMT_existing <- data.frame(
-  VMT = c(VMT$total_car_miles),
-  PMT_walk = c(PMT_walk$total_WALK_miles),
-  PMT_bike = c(PMT_bike$total_bike_miles)) %>% 
-  transpose()
-colnames(VMT_PMT_existing) <- purpose
-
-VMT_PMT_alternative <- data.frame(
-  VMT = c(VMT_alt$total_car_miles),
-  PMT_walk_alt = c(PMT_walk_alt$total_WALK_miles),
-  PMT_bike_alt = c(PMT_bike_alt$total_bike_miles)) %>% 
-  t()
-colnames(VMT_PMT_alternative) <- purpose
-
-VMT_PMT_growth <- VMT_PMT_alternative / VMT_PMT_existing - 1 %>% 
-  mutate(totals = HBO + HBW + NHB)
-
-VMT_PMT_growth_chart <- ggplot(VMT_PMT_growth,
-                               aes(x = 'ID',
-                                   y = value,
-                                   fill = purpose)) +
-  geom_bar(stat="identity")
+VMT_PMT_growth_chart <- pivot_longer(VMT_PMT_growth, c(HBO, HBW, NHB), names_to='purpose') %>% 
+  ggplot(aes(x = metric, y = value, fill = purpose)) +
+  geom_bar(position = 'dodge', stat="identity", width = 0.5) +
+  theme_bw() +
+  labs(y = 'growth')
 
 VMT_PMT_growth_chart
 
