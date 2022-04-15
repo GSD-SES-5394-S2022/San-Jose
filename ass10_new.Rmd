@@ -209,50 +209,64 @@ origins <- st_as_sf(centroids) %>%
 destinations <- origins %>%
   arrange(dest_order)
 
-r5r_core_existing <- here("existing",
-                          "networks") %>%
-  setup_r5(verbose = FALSE)
+#Load R-Objects instead of calculating distances
 
-ped_dist <- detailed_itineraries(r5r_core_existing,
-                                 origins = origins,
-                                 destinations = destinations,
-                                 mode = "WALK",
-                                 verbose = FALSE)  %>%
-  mutate(miles = distance / 1609.34) %>%
-  select(fromId, toId, miles) %>%
-  st_drop_geometry()
+ped_dist <- readRDS(here("existing",
+                         "data",
+                         "ped_dist.Rds"))
 
-saveRDS(ped_dist, here("existing",
-                       "data",
-                       "ped_dist.Rds"))
+drive_dist <- readRDS(here("existing",
+                         "data",
+                         "drive_dist.Rds"))
 
-drive_dist <- detailed_itineraries(r5r_core_existing,
-                                 origins = origins,
-                                 destinations = destinations,
-                                 mode = "CAR",
-                                 verbose = FALSE) %>%
-  mutate(miles = distance / 1609.34) %>%
-  select(fromId, toId, miles) %>%
-  st_drop_geometry()
+bike_dist <- readRDS(here("existing",
+                         "data",
+                         "bike_dist.Rds"))
 
-saveRDS(drive_dist, here("existing",
-                       "data",
-                       "drive_dist.Rds"))
+# r5r_core_existing <- here("existing",
+#                           "networks") %>%
+#   setup_r5(verbose = FALSE)
 
-bike_dist <- detailed_itineraries(r5r_core_existing,
-                                 origins = origins,
-                                 destinations = destinations,
-                                 mode = "BICYCLE",
-                                 verbose = FALSE) %>%
-  mutate(miles = distance / 1609.34) %>%
-  select(fromId, toId, miles) %>%
-  st_drop_geometry()
+# ped_dist <- detailed_itineraries(r5r_core_existing,
+#                                  origins = origins,
+#                                  destinations = destinations,
+#                                  mode = "WALK",
+#                                  verbose = FALSE)  %>%
+#   mutate(miles = distance / 1609.34) %>%
+#   select(fromId, toId, miles) %>%
+#   st_drop_geometry()
+# 
+# saveRDS(ped_dist, here("existing",
+#                        "data",
+#                        "ped_dist.Rds"))
 
-saveRDS(bike_dist, here("existing",
-                       "data",
-                       "bike_dist.Rds"))
+# drive_dist <- detailed_itineraries(r5r_core_existing,
+#                                  origins = origins,
+#                                  destinations = destinations,
+#                                  mode = "CAR",
+#                                  verbose = FALSE) %>%
+#   mutate(miles = distance / 1609.34) %>%
+#   select(fromId, toId, miles) %>%
+#   st_drop_geometry()
+# 
+# saveRDS(drive_dist, here("existing",
+#                        "data",
+#                        "drive_dist.Rds"))
 
-stop_r5() 
+# bike_dist <- detailed_itineraries(r5r_core_existing,
+#                                  origins = origins,
+#                                  destinations = destinations,
+#                                  mode = "BICYCLE",
+#                                  verbose = FALSE) %>%
+#   mutate(miles = distance / 1609.34) %>%
+#   select(fromId, toId, miles) %>%
+#   st_drop_geometry()
+# 
+# saveRDS(bike_dist, here("existing",
+#                        "data",
+#                        "bike_dist.Rds"))
+# 
+# stop_r5() 
 ```
 
 # Calculate PMT by mode
@@ -674,14 +688,16 @@ VMT_alt
 
 ```
 
-# Bar chart for comparing VMT
+# Bar chart for comparing VMT and PMT
 
 ```{r}
-# barplot with two bars, existing and alternative VMT
+# barplot with two bars, existing and alternative VMT and PMT
 
-VMT_diff <- data.frame(
+cond_diff <- data.frame(
   condition = c('Existing', 'Alternative'),
-  VMT = c(VMT, VMT_alt)) %>% 
+  VMT = c(VMT, VMT_alt),
+  PMT_walk = c(PMT_walk, PMT_walk_alt),
+  PMT_bike = c(PMT_bike, PMT_bike_alt)) %>% 
   ggplot(aes(x = condition, y = VMT, fill = condition)) +
   geom_bar(stat="identity")
 
