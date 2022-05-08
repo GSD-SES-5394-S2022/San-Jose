@@ -19,6 +19,9 @@ library(viridis)
 library(GGally)
 library(vtable)
 library(extrafont)
+library(here)
+
+options(scipen = 999)
 
 ```
 
@@ -142,9 +145,14 @@ sumtable(census, vars = c('ratio_no_veh', 'ratio_no_worker', 'ratio_lt_10k'), ad
 hist_y <- ggplot(census) +
   geom_histogram(aes(x = census$med_income),
                  fill = "dodgerblue3") +
-  labs(y = "Count", x = "Median Income")
+  scale_x_continuous(breaks = breaks <- seq(0, 120000,30000),
+                     labels = paste0("$", formatC(breaks,big.mark = ",", format = "d")),
+                     limits = c(0, 125000)) +
+  labs(y = "Number of Households", x = "Median Income")
 
 hist_y
+
+ggsave(here("2022_04_29 report_cw", "Links", "A2-distY.png"), height = 2.5, width = 4)
 
 veh <- data.frame(veh_own = c("0","1","2","3","4+"), count = c(sum(census$no_veh_hhE) / sum(census$total_hhsE), sum(census$one_veh_hhE) / sum(census$total_hhsE), sum(census$two_veh_hhE) / sum(census$total_hhsE), sum(census$three_veh_hhE) / sum(census$total_hhsE), sum(census$fourmore_veh_hhE) / sum(census$total_hhsE)))
 
@@ -180,7 +188,8 @@ census_alt <- census %>%
          jobs_change = service_jobs * wfh_percent,
          commuter_change = non_wfh * wfh_percent,
          alt_non_wfh = non_wfh - commuter_change,
-         alt_wfh = total_wfhE + commuter_change)
+         alt_wfh = total_wfhE + commuter_change) %>%
+  mutate(ratio_wfh_jobs = alt_service_jobs / total_jobs)
 
 
 ```
@@ -215,8 +224,9 @@ chlor_map <- function(df, variable, pal = NULL, title = NULL) {
   scale_fill_gradientn(name = title,
                        colors = pal) +
     theme_void() +
-    theme(panel.grid.minor = element_blank(), 
-          text = element_text(family = font, size = text_size))
+    theme(panel.grid.minor = element_blank()
+          # ,text = element_text(size = text_size)
+          )
 
 }
 
@@ -224,12 +234,17 @@ wfhemp_change_map <- chlor_map(census_alt, "commuter_change", pal = map_color,
                              title = "Commuters\nTransitioned\nto WFH")
 
 
-alt_wfhemp_map <- chlor_map(census_alt, "alt_wfh", pal = map_color,
-                            title = "Primarily WFH in\nAlternative Scenario")
+chlor_map(census_alt, "alt_wfh", pal = map_color6,
+          title = "Primarily WFH in\nAlternative Scenario")
 
 
-wfhjobs_change_map <- chlor_map(census_alt, "jobs_change", pal = map_color,
+chlor_map(census_alt, "jobs_change", pal = map_color6,
                                 title = "Jobs Transitioned\nto WFH in\nAlternative Scenario")
+
+chlor_map(census_alt, "ratio_wfh_jobs", pal = map_color6,
+          title = "Proportion of Jobs\nAble to be WFH")
+
+ggsave(here("2022_04_29 report_cw","Links", "A2-choro78.png"), height = 2.5, width = 4)
 
 
 ggsave("graphics/employee_commuting_change.jpeg", wfhemp_change_map, device = "jpeg")
@@ -265,8 +280,11 @@ newdf <- census_alt[,c("med_incomeE","alt_wfh","alt_service_jobs")] %>%
 
 corr <- ggcorr(newdf,palette = "RdBu",label=TRUE)
 
-income_map <- chlor_map(census, "med_incomeE", pal = map_color,
+chlor_map(census, "med_incomeE", pal = map_color,
                         title = "Median Income")
+
+ggsave(here("2022_04_29 report_cw","Links", "A2-choro1.png"), height = 2.5, width = 4)
+
 
 jobs_map <- chlor_map(census, "total_jobs", pal = map_color,
                       title = "Existing Total Jobs")
@@ -274,20 +292,25 @@ jobs_map <- chlor_map(census, "total_jobs", pal = map_color,
 employees_map <- chlor_map(census, "total_workerE", pal = map_color,
                            title = "Existing Total Employees")
 
-noveh_map <- chlor_map(census, "ratio_no_veh", pal = map_color,
+noveh_map <- chlor_map(census, "ratio_no_veh", pal = map_color4,
                        title = "Ratio Households with\nNo Vehicle to\nOne or More")
 
-noworker_map <- chlor_map(census, "ratio_no_worker", pal = map_color,
+ggsave(here("2022_04_29 report_cw","Links", "A2-choro4.png"), height = 3.75, width = 6)
+
+
+noworker_map <- chlor_map(census, "ratio_no_worker", pal = map_color5,
                           title = "Ratio Households with\nNo Workers to\nOne or More")
 
-lowinc_map <- chlor_map(census, "ratio_lt_10k", pal = map_color,
+ggsave(here("2022_04_29 report_cw","Links", "A2-choro5.png"), height = 3.75, width = 6)
+
+lowinc_map <- chlor_map(census, "ratio_lt_10k", pal = map_color5,
                         title = "Ratio Households <$10k Income")
 
+ggsave(here("2022_04_29 report_cw","Links", "A2-choro6.png"), height = 3.75, width = 6)
 
 
 ggsave("graphics/dotplot.jpeg", overall, device = "jpeg")
 ggsave("graphics/correlation.jpeg", corr, device = "jpeg")
-ggsave("graphics/income_map.jpeg", income_map, device = "jpeg")
 ggsave("graphics/jobs_map.jpeg", jobs_map, device = "jpeg")
 ggsave("graphics/employees_map.jpeg", employees_map, device = "jpeg")
 ggsave("graphics/novehicles_map.jpeg", noveh_map, device = "jpeg")
@@ -295,7 +318,7 @@ ggsave("graphics/noworkers_map.jpeg", noworker_map, device = "jpeg")
 ggsave("graphics/lowincome_map.jpeg", lowinc_map, device = "jpeg")
 
 
-
+income_map
 ```
 
 # Save Datasets
