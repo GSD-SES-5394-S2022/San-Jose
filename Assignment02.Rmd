@@ -148,7 +148,7 @@ hist_y <- ggplot(census) +
   scale_x_continuous(breaks = breaks <- seq(0, 120000,30000),
                      labels = paste0("$", formatC(breaks,big.mark = ",", format = "d")),
                      limits = c(0, 125000)) +
-  labs(y = "Number of Households", x = "Median Income")
+  labs(y = "Number of Tracts", x = "Median Income")
 
 hist_y
 

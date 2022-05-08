@@ -67,9 +67,13 @@ scatterplot_y1x1 <- ggplot(model_data, aes(y = pct_no_veh, x = pct_big_hh)) +
   geom_point(size = 1, color = "blue") +
   geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
 
-scatterplot_y1x2 <- ggplot(model_data, aes(y = pct_no_veh, x = pct_lo_inc)) +
+ggplot(model_data, aes(y = pct_no_veh, x = pct_lo_inc)) +
   geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
+  geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm") +
+  scale_x_continuous(name = "Proportion of Low-Income Households") +
+  scale_y_continuous(name = "Proportion of Households with No Vehicle")
+
+ggsave(here("2022_04_29 report_cw","Links", "A6-scatter1.png"), height = 5, width = 8)
 
 scatterplot_y1x3 <- ggplot(model_data, aes(y = pct_no_veh, x = pct_hi_inc)) +
   geom_point(size = 1, color = "blue") +
@@ -81,9 +85,14 @@ scatterplot_y1x4 <- ggplot(no_ratio_outliers, aes(y = pct_no_veh, x = ratio)) +
   geom_point(size = 1, color = "blue") +
   geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
 
-scatterplot_y1x5 <- ggplot(model_data, aes(y = pct_no_veh, x = pct_wfh_pop)) +
+ggplot(model_data, aes(y = pct_no_veh, x = pct_wfh_pop)) +
   geom_point(size = 1, color = "blue") +
-  geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm")
+  geom_smooth(size = 0.5, lty = "dashed", color = "blue", method = "lm") +
+  scale_x_continuous(name = "Proportion of WFH Employees") +
+  scale_y_continuous(name = "Proportion of Households with No Vehicle")
+
+ggsave(here("2022_04_29 report_cw","Links", "A6-scatter2.png"), height = 5, width = 8)
+
 
 scatterplot_y1x6 <- ggplot(model_data, aes(y = pct_no_veh, x = car_access)) +
   geom_point(size = 1, color = "blue") +
